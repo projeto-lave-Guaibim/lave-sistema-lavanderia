@@ -1,0 +1,78 @@
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { User, authService } from '../services/authService';
+import { supabase } from '../services/supabaseClient';
+
+interface AuthContextData {
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    login: (username: string, password: string) => Promise<void>;
+    register: (name: string, username: string, email: string, password: string) => Promise<void>;
+    logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextData>({} as AuthContextData);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // 1. Check active session
+        authService.getCurrentUser().then(user => {
+            setUser(user);
+            setIsLoading(false);
+        }).catch(() => {
+            setIsLoading(false);
+        });
+
+        // 2. Listen for changes (login, logout, etc.)
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') {
+                setUser(null);
+                setIsLoading(false);
+            } else if (event === 'SIGNED_IN' && session?.user) {
+                // On sign in, getCurrentUser will be called separately to get the full user with role
+                // Just set loading to false here
+                setIsLoading(false);
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    const login = async (username: string, password: string) => {
+        await authService.login(username, password);
+        // Fetch the user with correct role from database
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser) {
+            setUser(currentUser);
+        }
+    };
+
+    const register = async (name: string, username: string, email: string, password: string) => {
+        await authService.register(name, username, email, password);
+        // State update handled by onAuthStateChange
+    };
+
+    const logout = async () => {
+        await authService.logout();
+        // State update handled by onAuthStateChange
+    };
+
+    return (
+        <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, register, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within an AuthProvider');
+    }
+    return context;
+};
