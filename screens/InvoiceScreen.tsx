@@ -55,7 +55,7 @@ const InvoiceScreen: React.FC = () => {
     deliveryDate.setDate(deliveryDate.getDate() + 2);
 
     return (
-        <div className="bg-background-light dark:bg-background-dark min-h-screen py-6 sm:py-12">
+        <div className="bg-background-light dark:bg-background-dark min-h-screen py-6 sm:py-12 pb-32">
             <header className="fixed top-0 left-0 right-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm p-4 flex justify-between items-center no-print z-50 border-b border-gray-200 dark:border-gray-700">
                  <button onClick={() => navigate(-1)} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-white"><span className="material-symbols-outlined">arrow_back</span></button>
                  <div className="flex items-center gap-3">
