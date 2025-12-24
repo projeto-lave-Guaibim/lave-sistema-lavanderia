@@ -416,7 +416,7 @@ export const OrderDetailsScreen: React.FC = () => {
                 <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[#111418] dark:text-white">arrow_back</span></button>
                 <h1 className="text-[#111418] dark:text-white text-lg font-bold leading-tight flex-1 text-center pr-10">Pedido #{order.id}</h1>
             </header>
-            <main className="flex-1 overflow-y-auto no-scrollbar p-4 pb-24">
+            <main className="flex-1 overflow-y-auto no-scrollbar p-4 pb-32">
                 <div className="flex flex-col gap-4">
                     <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
                         <div className="flex items-center justify-between mb-4">

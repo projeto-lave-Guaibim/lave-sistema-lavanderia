@@ -26,7 +26,7 @@ const AppLayout = () => {
         <div className="relative flex h-screen w-full overflow-hidden bg-background-light dark:bg-background-dark">
             <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
             
-            <div className="flex-1 flex flex-col h-full overflow-hidden relative w-full max-w-md md:max-w-none mx-auto md:mx-0 shadow-xl md:shadow-none">
+            <div className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
                 <Outlet context={{ toggleSidebar: () => setIsSidebarOpen(!isSidebarOpen) }} />
                 <BottomNav />
             </div>
