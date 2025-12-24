@@ -30,6 +30,7 @@ export interface Order {
   status: OrderStatus;
   value?: number;
   extras?: Extra[];
+  discount?: number;
 }
 
 export interface StockItem {

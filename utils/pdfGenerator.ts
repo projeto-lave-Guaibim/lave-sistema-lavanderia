@@ -168,6 +168,14 @@ export const generateOrderPDF = (order: Order) => {
     const finalY = (doc as any).lastAutoTable.finalY || 120;
     const summaryY = finalY + 10;
     
+    // Calculate values
+    let subtotal = order.value || 0;
+    if (order.extras && order.extras.length > 0) {
+        subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
+    }
+    const discount = order.discount || 0;
+    const total = Math.max(0, subtotal - discount);
+    
     doc.setDrawColor(220, 220, 220);
     doc.setFillColor(248, 249, 250);
     doc.roundedRect(120, summaryY, 75, 30, 3, 3, 'FD');
@@ -176,10 +184,10 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     doc.text("Subtotal", 125, summaryY + 8);
-    doc.text(`R$ ${order.value?.toFixed(2).replace('.', ',')}`, 190, summaryY + 8, { align: "right" });
+    doc.text(`R$ ${subtotal.toFixed(2).replace('.', ',')}`, 190, summaryY + 8, { align: "right" });
     
     doc.text("Descontos", 125, summaryY + 14);
-    doc.text("R$ 0,00", 190, summaryY + 14, { align: "right" });
+    doc.text(`R$ ${discount.toFixed(2).replace('.', ',')}`, 190, summaryY + 14, { align: "right" });
     
     // Separator line
     doc.setDrawColor(200, 200, 200);
@@ -193,7 +201,7 @@ export const generateOrderPDF = (order: Order) => {
     doc.text("Total a Pagar", 125, summaryY + 25);
     
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(`R$ ${order.value?.toFixed(2).replace('.', ',')}`, 190, summaryY + 25, { align: "right" });
+    doc.text(`R$ ${total.toFixed(2).replace('.', ',')}`, 190, summaryY + 25, { align: "right" });
 
     // Footer
     const footerY = 270;

@@ -55,7 +55,7 @@ const InvoiceScreen: React.FC = () => {
     deliveryDate.setDate(deliveryDate.getDate() + 2);
 
     return (
-        <div className="bg-background-light dark:bg-background-dark min-h-screen py-6 sm:py-12 pb-32">
+        <div className="bg-background-light dark:bg-background-dark min-h-screen overflow-y-auto">
             <header className="fixed top-0 left-0 right-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm p-4 flex justify-between items-center no-print z-50 border-b border-gray-200 dark:border-gray-700">
                  <button onClick={() => navigate(-1)} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors text-gray-800 dark:text-white"><span className="material-symbols-outlined">arrow_back</span></button>
                  <div className="flex items-center gap-3">
@@ -68,7 +68,7 @@ const InvoiceScreen: React.FC = () => {
                     </button>
                  </div>
             </header>
-            <div className="printable-area max-w-3xl mx-auto bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl p-8 sm:p-12 border border-gray-200 dark:border-gray-700 mt-20 sm:mt-12">
+            <div className="printable-area max-w-3xl mx-auto bg-surface-light dark:bg-surface-dark rounded-2xl shadow-2xl p-8 sm:p-12 border border-gray-200 dark:border-gray-700 mt-20 sm:mt-12 mb-8">
                 {/* Header com Branding */}
                 <header className="pb-8 mb-8 border-b-2 border-primary/20">
                     <div className="flex justify-between items-start mb-6">

@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // 1. Check active session
+        // 1. Check active session on mount
         authService.getCurrentUser().then(user => {
             setUser(user);
             setIsLoading(false);
@@ -26,14 +26,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setIsLoading(false);
         });
 
-        // 2. Listen for changes (login, logout, etc.)
+        // 2. Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth event:', event, 'Has session:', !!session);
+            
             if (event === 'SIGNED_OUT') {
                 setUser(null);
                 setIsLoading(false);
-            } else if (event === 'SIGNED_IN' && session?.user) {
-                // On sign in, getCurrentUser will be called separately to get the full user with role
-                // Just set loading to false here
+            } else if (session?.user) {
+                // For SIGNED_IN, INITIAL_SESSION, TOKEN_REFRESHED - fetch full user data
+                try {
+                    const currentUser = await authService.getCurrentUser();
+                    if (currentUser) {
+                        setUser(currentUser);
+                    }
+                } catch (error) {
+                    console.error('Error fetching user on auth change:', error);
+                }
+                setIsLoading(false);
+            } else {
                 setIsLoading(false);
             }
         });

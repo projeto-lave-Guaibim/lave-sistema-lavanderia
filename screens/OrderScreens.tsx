@@ -116,6 +116,7 @@ export const NewOrderScreen: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<{ item: CatalogItem; quantity: number }[]>([]);
     const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
     const [details, setDetails] = useState('');
+    const [discount, setDiscount] = useState('0');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -172,7 +173,8 @@ export const NewOrderScreen: React.FC = () => {
             }
         }
         total += selectedExtras.reduce((acc, curr) => acc + curr.price, 0);
-        return total;
+        const discountAmount = parseFloat(discount) || 0;
+        return Math.max(0, total - discountAmount);
     };
 
     const handleSubmit = async () => {
@@ -197,6 +199,7 @@ export const NewOrderScreen: React.FC = () => {
                 value: totalValue,
                 status: OrderStatus.Pendente,
                 extras: selectedExtras,
+                discount: parseFloat(discount) || 0,
                 timestamp: new Date().toLocaleString('pt-BR')
             };
 
@@ -324,7 +327,7 @@ export const NewOrderScreen: React.FC = () => {
                 )}
 
                 {step === 4 && (
-                    <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                    <div className="space-y-6 animate-in slide-in-from-right duration-300 pb-32">
                         <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Serviços Extras</h2>
                         <div className="grid gap-3">
                             {extras.map(extra => {
@@ -342,6 +345,36 @@ export const NewOrderScreen: React.FC = () => {
                                 );
                             })}
                             {extras.length === 0 && <p className="text-gray-500 text-center">Nenhum serviço extra disponível.</p>}
+                        </div>
+
+                        {/* Desconto como checkbox com valor editável */}
+                        <div className="grid gap-3">
+                            <div className={`flex items-center justify-between p-4 rounded-xl border ${parseFloat(discount) > 0 ? 'bg-danger/5 border-danger/30' : 'bg-surface-light dark:bg-surface-dark border-gray-100 dark:border-gray-800'}`}>
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div 
+                                        onClick={() => setDiscount(parseFloat(discount) > 0 ? '0' : '10')}
+                                        className={`size-6 rounded-md border flex items-center justify-center cursor-pointer ${parseFloat(discount) > 0 ? 'bg-danger border-danger text-white' : 'border-gray-300 dark:border-gray-600'}`}
+                                    >
+                                        {parseFloat(discount) > 0 && <span className="material-symbols-outlined text-sm">check</span>}
+                                    </div>
+                                    <span className="font-bold text-[#111418] dark:text-white">Desconto</span>
+                                </div>
+                                {parseFloat(discount) > 0 && (
+                                    <input 
+                                        type="number" 
+                                        value={discount} 
+                                        onChange={e => setDiscount(e.target.value)}
+                                        onClick={e => e.stopPropagation()}
+                                        className="w-28 rounded-lg border border-danger/30 bg-white dark:bg-surface-dark px-3 py-1 text-right font-bold text-danger focus:ring-danger focus:border-danger" 
+                                        placeholder="0,00"
+                                        step="0.01"
+                                        min="0"
+                                    />
+                                )}
+                                {parseFloat(discount) === 0 && (
+                                    <span className="font-bold text-danger">- R$ 0,00</span>
+                                )}
+                            </div>
                         </div>
 
                         <div>
