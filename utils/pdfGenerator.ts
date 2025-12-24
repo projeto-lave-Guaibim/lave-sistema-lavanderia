@@ -12,22 +12,23 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.roundedRect(15, 15, 35, 35, 5, 5, 'F');
     
-    // Logo icon placeholder (washing machine symbol)
-    doc.setFontSize(28);
+    // Logo icon - Simple text representation instead of emoji
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(255, 255, 255);
-    doc.text("🧺", 32.5, 37, { align: "center" });
+    doc.text("LAVE", 32.5, 37, { align: "center" });
 
-    // Company Name - Lavê
+    // Company Name - Lave
     doc.setFontSize(26);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("Lavê", 55, 30);
+    doc.text("Lave", 55, 30);
     
     // Slogan
     doc.setFontSize(9);
-    doc.setFont("helvetica", "italic");
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.text("Cuidar bem é a nossa essência.", 55, 37);
+    doc.text("Cuidar bem e a nossa essencia.", 55, 37);
 
     // Comprovante title (right side)
     doc.setFontSize(18);
@@ -89,6 +90,8 @@ export const generateOrderPDF = (order: Order) => {
     doc.text(order.client.phone, 20, cardY + 20);
 
     // Date Card
+    doc.setDrawColor(220, 220, 220);
+    doc.setFillColor(255, 255, 255);
     doc.roundedRect(110, cardY, 85, 25, 3, 3, 'FD');
     
     doc.setFontSize(8);
@@ -103,8 +106,8 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(`Emissão: ${today.toLocaleDateString('pt-BR')}`, 115, cardY + 14);
-    doc.text(`Previsão: ${deliveryDate.toLocaleDateString('pt-BR')}`, 115, cardY + 20);
+    doc.text(`Emissao: ${today.toLocaleDateString('pt-BR')}`, 115, cardY + 14);
+    doc.text(`Previsao: ${deliveryDate.toLocaleDateString('pt-BR')}`, 115, cardY + 20);
 
     // Services Table
     const tableBody: any[] = [
@@ -201,15 +204,15 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("Obrigado pela sua preferência!", 105, footerY + 7, { align: "center" });
+    doc.text("Obrigado pela sua preferencia!", 105, footerY + 7, { align: "center" });
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.text("Seu pedido será tratado com todo cuidado e carinho.", 105, footerY + 12, { align: "center" });
+    doc.text("Seu pedido sera tratado com todo cuidado e carinho.", 105, footerY + 12, { align: "center" });
     
-    doc.setFont("helvetica", "italic");
-    doc.text("💙 Lavê. Cuidar bem é a nossa essência.", 105, footerY + 18, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.text("Lave. Cuidar bem e a nossa essencia.", 105, footerY + 18, { align: "center" });
 
     // Save with formatted filename
     const clientName = order.client.name.replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
