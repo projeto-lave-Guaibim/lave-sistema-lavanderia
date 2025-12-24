@@ -74,7 +74,7 @@ const InvoiceScreen: React.FC = () => {
                     <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">
                             <div className="flex size-16 shrink-0 items-center justify-center bg-gradient-to-br from-primary to-primary-dark rounded-2xl shadow-lg shadow-primary/30">
-                                <span className="material-symbols-outlined text-white text-4xl">local_laundry_service</span>
+                                <span className="material-symbols-outlined filled text-white text-4xl">local_laundry_service</span>
                             </div>
                             <div>
                                 <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent">Lavê</h1>
@@ -117,17 +117,17 @@ const InvoiceScreen: React.FC = () => {
                             {order.client.phone}
                         </p>
                     </div>
-                    <div className="bg-white dark:bg-gray-800/30 rounded-xl p-5 border border-gray-200 dark:border-gray-700">
+                    <div className="bg-white dark:bg-surface-dark rounded-xl p-5 border border-gray-200 dark:border-gray-700">
                         <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
                             <span className="material-symbols-outlined text-sm">event</span>
                             Datas
                         </h3>
                         <div className="space-y-2">
-                            <p className="text-gray-700 dark:text-gray-200 flex justify-between">
+                            <p className="text-gray-700 dark:text-white flex justify-between">
                                 <span className="font-semibold">Emissão:</span> 
                                 <span>{today.toLocaleDateString('pt-BR')}</span>
                             </p>
-                            <p className="text-gray-700 dark:text-gray-200 flex justify-between">
+                            <p className="text-gray-700 dark:text-white flex justify-between">
                                 <span className="font-semibold">Previsão:</span> 
                                 <span>{deliveryDate.toLocaleDateString('pt-BR')}</span>
                             </p>
@@ -185,9 +185,9 @@ const InvoiceScreen: React.FC = () => {
                          <p className="text-lg font-bold text-primary mb-1">Obrigado pela sua preferência!</p>
                          <p className="text-sm text-gray-600 dark:text-gray-400">Seu pedido será tratado com todo cuidado e carinho.</p>
                      </div>
-                     <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-500">
-                         <span className="material-symbols-outlined text-primary text-sm">favorite</span>
-                         <span className="italic">Lavê. Cuidar bem é a nossa essência.</span>
+                     <div className="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                         <span className="material-symbols-outlined filled text-primary text-sm">favorite</span>
+                         <span>Lavê. Cuidar bem é a nossa essência.</span>
                      </div>
                 </footer>
             </div>
