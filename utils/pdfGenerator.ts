@@ -2,33 +2,45 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Order } from '../types';
 
-export const generateOrderPDF = (order: Order) => {
+export const generateOrderPDF = async (order: Order) => {
     const doc = new jsPDF();
     const primaryColor: [number, number, number] = [48, 125, 232]; // #307de8
     const darkGray: [number, number, number] = [60, 60, 60];
     const lightGray: [number, number, number] = [150, 150, 150];
 
-    // Header - Logo area with gradient effect (simulated with rectangle)
-    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.roundedRect(15, 15, 35, 35, 5, 5, 'F');
-    
-    // Logo icon - Simple text representation instead of emoji
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(255, 255, 255);
-    doc.text("LAVE", 32.5, 37, { align: "center" });
+    // Load and add logo
+    try {
+        const logoImg = new Image();
+        logoImg.src = '/logo-lave.png';
+        await new Promise((resolve, reject) => {
+            logoImg.onload = resolve;
+            logoImg.onerror = reject;
+        });
+        
+        // Add logo image (reduced size for better harmony)
+        doc.addImage(logoImg, 'PNG', 15, 15, 25, 25);
+    } catch (error) {
+        // Fallback to colored rectangle if logo fails to load
+        doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.roundedRect(15, 15, 25, 25, 5, 5, 'F');
+        
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(255, 255, 255);
+        doc.text("LAVÊ", 27.5, 30, { align: "center" });
+    }
 
-    // Company Name - Lave
+    // Company Name - Lavê (moved closer to logo)
     doc.setFontSize(26);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("Lave", 55, 30);
+    doc.text("Lavê", 45, 27);
     
-    // Slogan
+    // Slogan (adjusted position)
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.text("Cuidar bem e a nossa essencia.", 55, 37);
+    doc.text("Cuidar bem é a nossa essência.", 45, 34);
 
     // Comprovante title (right side)
     doc.setFontSize(18);
@@ -53,7 +65,7 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFont("helvetica", "bold");
     doc.text("CNPJ:", 20, 62);
     doc.setFont("helvetica", "normal");
-    doc.text("63.374.913/0009-8", 35, 62);
+    doc.text("63.374.913/0001-98", 35, 62);
     
     // Address
     doc.setFont("helvetica", "bold");
@@ -70,24 +82,42 @@ export const generateOrderPDF = (order: Order) => {
     // Client and Date Info Cards
     const cardY = 85;
     
+    // Calculate client card height based on available info
+    let clientCardHeight = 25;
+    if (order.client.email) clientCardHeight += 5;
+    if (order.client.document) clientCardHeight += 5;
+    
     // Client Card
     doc.setDrawColor(220, 220, 220);
     doc.setFillColor(255, 255, 255);
-    doc.roundedRect(15, cardY, 85, 25, 3, 3, 'FD');
+    doc.roundedRect(15, cardY, 85, clientCardHeight, 3, 3, 'FD');
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
     doc.text("CLIENTE", 20, cardY + 6);
     
+    let yOffset = cardY + 14;
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(order.client.name, 20, cardY + 14);
+    doc.text(order.client.name, 20, yOffset);
     
+    yOffset += 6;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(order.client.phone, 20, cardY + 20);
+    doc.text(`Tel: ${order.client.phone}`, 20, yOffset);
+    
+    if (order.client.email) {
+        yOffset += 5;
+        doc.text(`Email: ${order.client.email}`, 20, yOffset);
+    }
+    
+    if (order.client.document) {
+        yOffset += 5;
+        const docLabel = order.client.type === 'Pessoa Jurídica' ? 'CNPJ' : 'CPF';
+        doc.text(`${docLabel}: ${order.client.document}`, 20, yOffset);
+    }
 
     // Date Card
     doc.setDrawColor(220, 220, 220);
@@ -114,8 +144,8 @@ export const generateOrderPDF = (order: Order) => {
         [
             { content: order.service + (order.details ? `\n${order.details}` : ''), styles: { fontStyle: 'bold' } },
             '1',
-            `R$ ${order.value?.toFixed(2).replace('.', ',')}`,
-            `R$ ${order.value?.toFixed(2).replace('.', ',')}`
+            `R$ ${order.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `R$ ${order.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         ]
     ];
 
@@ -125,8 +155,8 @@ export const generateOrderPDF = (order: Order) => {
             tableBody.push([
                 `Extra: ${extra.name}`,
                 '1',
-                `R$ ${extra.price.toFixed(2).replace('.', ',')}`,
-                `R$ ${extra.price.toFixed(2).replace('.', ',')}`
+                `R$ ${extra.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                `R$ ${extra.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
             ]);
         });
     }
@@ -184,10 +214,10 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
     doc.text("Subtotal", 125, summaryY + 8);
-    doc.text(`R$ ${subtotal.toFixed(2).replace('.', ',')}`, 190, summaryY + 8, { align: "right" });
+    doc.text(`R$ ${subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, summaryY + 8, { align: "right" });
     
     doc.text("Descontos", 125, summaryY + 14);
-    doc.text(`R$ ${discount.toFixed(2).replace('.', ',')}`, 190, summaryY + 14, { align: "right" });
+    doc.text(`R$ ${discount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, summaryY + 14, { align: "right" });
     
     // Separator line
     doc.setDrawColor(200, 200, 200);
@@ -201,7 +231,7 @@ export const generateOrderPDF = (order: Order) => {
     doc.text("Total a Pagar", 125, summaryY + 25);
     
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(`R$ ${total.toFixed(2).replace('.', ',')}`, 190, summaryY + 25, { align: "right" });
+    doc.text(`R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, summaryY + 25, { align: "right" });
 
     // Footer
     const footerY = 270;
@@ -212,15 +242,15 @@ export const generateOrderPDF = (order: Order) => {
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("Obrigado pela sua preferencia!", 105, footerY + 7, { align: "center" });
+    doc.text("Obrigado pela sua preferência!", 105, footerY + 7, { align: "center" });
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.text("Seu pedido sera tratado com todo cuidado e carinho.", 105, footerY + 12, { align: "center" });
+    doc.text("Seu pedido será tratado com todo cuidado e carinho.", 105, footerY + 12, { align: "center" });
     
     doc.setFont("helvetica", "normal");
-    doc.text("Lave. Cuidar bem e a nossa essencia.", 105, footerY + 18, { align: "center" });
+    doc.text("Lavê. Cuidar bem é a nossa essência.", 105, footerY + 18, { align: "center" });
 
     // Save with formatted filename
     const clientName = order.client.name.replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "");

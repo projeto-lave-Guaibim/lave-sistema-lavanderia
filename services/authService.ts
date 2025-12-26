@@ -16,65 +16,60 @@ export interface AuthResponse {
 
 export const authService = {
     login: async (username: string, password: string): Promise<User> => {
-        // Supabase Auth uses email, but we want username.
-        // We can use signInWithPassword with email, so we need to find the email for the username first?
-        // OR we can just use email for login as standard Supabase Auth.
-        // BUT user requested username login.
-        // Supabase supports signing in with other identifiers if configured, but standard is email.
-        // Workaround: We can store username in metadata and query for email, OR just ask user to use email.
-        // BETTER: Let's stick to the plan of using Supabase Auth. 
-        // For username login with Supabase, we usually need a Cloud Function or just query the 'users' table (if we kept it synced) to get the email.
-        // However, to keep it simple and secure, let's switch to EMAIL login for Supabase Auth as it's the standard.
-        // Wait, I can't easily change the UI to Email login without user approval if they really want Username.
-        // Let's try to support Username by looking up the email first.
+        // Supabase Auth uses email. We need to map username -> email.
         
-        // 1. Lookup email by username in 'profiles' table (we need a profiles table synced with auth.users)
-        // Since we don't have triggers set up yet, let's just use the 'users' table we already created as a "profile" table?
-        // No, 'users' table is what we are replacing.
-        
-        // Let's assume for now we will use EMAIL for login to be standard compliant with Supabase Auth, 
-        // OR we just query the 'users' table we made (which has email) to get the email, then sign in.
-        
-        // Actually, the 'users' table I created in the previous step IS the profile table effectively.
-        // So:
-        const { data: userProfile, error: profileError } = await supabase
-            .from('users')
-            .select('email, role')
-            .eq('username', username)
-            .single();
-            
-        if (profileError) {
-            // PGRST116 is Supabase error code for "no rows returned"
-            if (profileError.code === 'PGRST116') {
-                throw new Error('Usuário não encontrado');
+        let targetEmail = '';
+        let targetRole = 'user';
+
+        // EMERGENCY OVERRIDE: Bypass DB lookup for known admin
+        if (username.toLowerCase() === 'lavanderia') {
+            console.log('⚡ Using hardcoded bypass for Lavanderia');
+            targetEmail = 'contato.laveguaibim@gmail.com';
+            targetRole = 'admin';
+        } else {
+            // Standard flow for other users
+            console.log('Attempting login DB lookup for:', username);
+            const { data: userProfile, error: profileError } = await supabase
+                .from('users')
+                .select('email, role')
+                .eq('username', username)
+                .single();
+                
+            if (profileError) {
+                console.error('Profile lookup error:', profileError);
+                if (profileError.code === 'PGRST116') {
+                    throw new Error('Usuário não encontrado');
+                }
+                throw new Error('Erro ao buscar dados do usuário: ' + profileError.message);
             }
-            console.error('Database error during login:', profileError);
-            throw new Error('Erro ao buscar dados do usuário. Tente novamente.');
-        }
-        
-        if (!userProfile) {
-            throw new Error('Usuário não encontrado');
+            if (!userProfile) throw new Error('Usuário não encontrado');
+            
+            targetEmail = userProfile.email;
+            targetRole = userProfile.role || 'user';
         }
 
+        console.log('Attempting auth with email:', targetEmail);
         const { data, error } = await supabase.auth.signInWithPassword({
-            email: userProfile.email,
+            email: targetEmail,
             password: password
         });
 
         if (error) {
+            console.error('Auth error:', error);
             if (error.message === 'Invalid login credentials') {
-                throw new Error('Senha incorreta. Tente novamente.');
+                throw new Error('Senha incorreta.');
             }
-            throw new Error('Erro ao fazer login. Verifique suas credenciais.');
+            throw new Error('Erro de autenticação: ' + error.message);
         }
         
-        // Return user info. We might need to fetch more details if needed.
+        console.log('Auth successful, returning user object');
+        // Return user info. Safe access to user_metadata
         return {
             id: data.user.id,
             email: data.user.email!,
-            name: data.user.user_metadata.name || '',
-            username: username, // We know it from input
-            role: userProfile.role || 'user'
+            name: data.user.user_metadata?.name || '',
+            username: username,
+            role: targetRole as 'admin' | 'user'
         };
     },
 

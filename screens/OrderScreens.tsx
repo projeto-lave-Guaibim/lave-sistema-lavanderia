@@ -77,7 +77,7 @@ export const OrdersListScreen: React.FC = () => {
                                         <div className={`w-1.5 h-10 rounded-full ${getStatusColor(order.status).split(' ')[0]}`}></div>
                                         <div>
                                             <p className="text-[#111418] dark:text-white text-sm font-bold leading-tight">#{order.id.toString().padStart(4, '0')} • {order.client.name}</p>
-                                            <p className="text-[#637288] dark:text-gray-400 text-xs font-medium">{order.service} • R$ {order.value.toFixed(2).replace('.',',')}</p>
+                                            <p className="text-[#637288] dark:text-gray-400 text-xs font-medium">{order.service} • R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
                                     <span className="material-symbols-outlined text-gray-400 text-xl">chevron_right</span>
@@ -200,7 +200,7 @@ export const NewOrderScreen: React.FC = () => {
                 status: OrderStatus.Pendente,
                 extras: selectedExtras,
                 discount: parseFloat(discount) || 0,
-                timestamp: new Date().toLocaleString('pt-BR')
+                timestamp: new Date().toISOString()
             };
 
             await orderService.create(newOrder);
@@ -317,7 +317,7 @@ export const NewOrderScreen: React.FC = () => {
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-gray-500">Total Estimado</span>
-                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toFixed(2).replace('.',',')}</span>
+                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <button onClick={() => setStep(4)} disabled={calculateTotal() === 0} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
                                 Continuar
@@ -385,7 +385,7 @@ export const NewOrderScreen: React.FC = () => {
                         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
                             <div className="flex justify-between items-center mb-4">
                                 <span className="text-gray-500">Total Final</span>
-                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toFixed(2).replace('.',',')}</span>
+                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <button onClick={handleSubmit} disabled={submitting} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
                                 {submitting ? 'Salvando...' : 'Finalizar Pedido'}
@@ -503,7 +503,7 @@ export const OrderDetailsScreen: React.FC = () => {
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Serviço</span><span className="font-medium text-[#111418] dark:text-white">{order.service}</span></div>
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Detalhes</span><span className="font-medium text-[#111418] dark:text-white text-right max-w-[60%]">{order.details}</span></div>
-                            <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800"><span className="font-bold text-[#111418] dark:text-white">Total</span><span className="font-bold text-primary text-lg">R$ {order.value.toFixed(2).replace('.',',')}</span></div>
+                            <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800"><span className="font-bold text-[#111418] dark:text-white">Total</span><span className="font-bold text-primary text-lg">R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                         </div>
                     </div>
                 </div>

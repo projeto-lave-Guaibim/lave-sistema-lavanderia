@@ -12,8 +12,6 @@ export const clientService = {
         
         return (data || []).map((client: any) => ({
             ...client,
-            // Supabase returns array for text[] column, so no split needed if schema is correct.
-            // But if we used text, we might need to split. I used TEXT[] in SQL.
             tags: client.tags || []
         }));
     },
@@ -23,10 +21,11 @@ export const clientService = {
             .from('clients')
             .insert([{
                 name: client.name,
-                mobile: client.phone, // Map phone to mobile
+                mobile: client.phone,
                 email: client.email,
+                document: client.document,
                 type: client.type,
-                address: '', // Add address if needed in UI
+                address: '',
                 notes: client.notes,
                 tags: client.tags
             }])
@@ -49,6 +48,7 @@ export const clientService = {
                 name: client.name,
                 mobile: client.phone,
                 email: client.email,
+                document: client.document,
                 type: client.type,
                 notes: client.notes,
                 tags: client.tags

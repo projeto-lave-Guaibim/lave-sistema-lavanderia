@@ -113,6 +113,7 @@ const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuccess: (
         phone: client?.phone || '',
         type: client?.type || 'Pessoa Física',
         email: client?.email || '',
+        document: client?.document || '',
         notes: client?.notes || '',
         tags: client?.tags || [] as string[]
     });
@@ -177,6 +178,11 @@ const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuccess: (
                             <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">E-mail</label>
                             <input type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" placeholder="email@cliente.com" />
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{formData.type === 'Pessoa Jurídica' ? 'CNPJ' : 'CPF'}</label>
+                        <input type="text" value={formData.document} onChange={e => setFormData({...formData, document: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" placeholder={formData.type === 'Pessoa Jurídica' ? '00.000.000/0000-00' : '000.000.000-00'} />
                     </div>
 
                     <div>

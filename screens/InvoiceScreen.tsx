@@ -44,9 +44,9 @@ const InvoiceScreen: React.FC = () => {
         );
     }
     
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
         if (order) {
-            generateOrderPDF(order);
+            await generateOrderPDF(order);
         }
     };
 
@@ -111,11 +111,25 @@ const InvoiceScreen: React.FC = () => {
                             <span className="material-symbols-outlined text-sm">person</span>
                             Cliente
                         </h3>
-                        <p className="text-xl font-bold text-gray-900 dark:text-white mb-1">{order.client.name}</p>
-                        <p className="text-gray-600 dark:text-gray-300 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-sm">phone</span>
-                            {order.client.phone}
-                        </p>
+                        <p className="text-xl font-bold text-gray-900 dark:text-white mb-2">{order.client.name}</p>
+                        <div className="space-y-1">
+                            <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-sm">phone</span>
+                                {order.client.phone}
+                            </p>
+                            {order.client.email && (
+                                <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">email</span>
+                                    {order.client.email}
+                                </p>
+                            )}
+                            {order.client.document && (
+                                <p className="text-sm text-gray-600 dark:text-gray-300 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-sm">badge</span>
+                                    <span className="font-medium">{order.client.type === 'Pessoa Jurídica' ? 'CNPJ:' : 'CPF:'}</span> {order.client.document}
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <div className="bg-white dark:bg-surface-dark rounded-xl p-5 border border-gray-200 dark:border-gray-700">
                         <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -153,9 +167,25 @@ const InvoiceScreen: React.FC = () => {
                                     {order.details && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{order.details}</div>}
                                 </td>
                                 <td className="px-6 py-5 text-center text-gray-700 dark:text-gray-300">1</td>
-                                <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">R$ {order.value?.toFixed(2).replace('.', ',')}</td>
-                                <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">R$ {order.value?.toFixed(2).replace('.', ',')}</td>
+                                <div className="hidden">{/* Calculando valor do serviço base para exibição */}</div>
+                                <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">
+                                    R$ {(order.value && order.extras ? (order.value + (order.discount || 0) - order.extras.reduce((acc, e) => acc + e.price, 0)) : order.value)?.toFixed(2).replace('.', ',')}
+                                </td>
+                                <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">
+                                    R$ {(order.value && order.extras ? (order.value + (order.discount || 0) - order.extras.reduce((acc, e) => acc + e.price, 0)) : order.value)?.toFixed(2).replace('.', ',')}
+                                </td>
                             </tr>
+                            {/* Render Extras */}
+                            {order.extras?.map(extra => (
+                                <tr key={extra.id} className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
+                                    <td className="px-6 py-4">
+                                        <div className="font-medium text-gray-900 dark:text-white">Extra: {extra.name}</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center text-gray-700 dark:text-gray-300">1</td>
+                                    <td className="px-6 py-4 text-right text-gray-700 dark:text-gray-300">R$ {extra.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                    <td className="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">R$ {extra.price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </section>
@@ -165,16 +195,29 @@ const InvoiceScreen: React.FC = () => {
                     <div className="w-full max-w-sm bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl p-6 border border-gray-200 dark:border-gray-700 space-y-3">
                         <div className="flex justify-between text-gray-600 dark:text-gray-300">
                             <span>Subtotal</span>
-                            <span>R$ {order.value?.toFixed(2).replace('.', ',')}</span>
+                            <span>R$ {(() => {
+                                let subtotal = order.value || 0;
+                                if (order.extras && order.extras.length > 0) {
+                                    subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
+                                }
+                                return subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            })()}</span>
                         </div>
                         <div className="flex justify-between text-gray-600 dark:text-gray-300">
                             <span>Descontos</span>
-                            <span>R$ 0,00</span>
+                            <span>R$ {(order.discount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="border-t-2 border-gray-300 dark:border-gray-600"></div>
                         <div className="flex justify-between text-xl font-bold">
                             <span className="text-gray-900 dark:text-white">Total a Pagar</span>
-                            <span className="text-primary">R$ {order.value?.toFixed(2).replace('.', ',')}</span>
+                            <span className="text-primary">R$ {(() => {
+                                let subtotal = order.value || 0;
+                                if (order.extras && order.extras.length > 0) {
+                                    subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
+                                }
+                                const total = Math.max(0, subtotal - (order.discount || 0));
+                                return total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                            })()}</span>
                         </div>
                     </div>
                 </section>

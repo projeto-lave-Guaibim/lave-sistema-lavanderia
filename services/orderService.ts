@@ -12,16 +12,17 @@ export const orderService = {
 
         return data.map((o: any) => ({
             id: o.id,
-            service: o.service_type, // Map service_type to service
-            details: o.description, // Map description to details
-            timestamp: new Date(o.created_at).toLocaleString('pt-BR'), // Format date
+            service: o.service_type, 
+            details: o.description, 
+            timestamp: new Date(o.created_at).toLocaleString('pt-BR'), 
             status: o.status,
             value: Number(o.value),
-            extras: o.extras || [], // Map extras
+            extras: o.extras || [],
+            discount: o.discount || 0,
             client: {
                 id: o.client_id,
                 name: o.client_name,
-                phone: '', // We might need to join clients table to get phone if needed
+                phone: '', 
                 tags: [],
                 memberSince: ''
             }
@@ -38,8 +39,8 @@ export const orderService = {
                 description: order.details,
                 status: order.status,
                 value: order.value,
-                extras: order.extras || []
-                // created_at defaults to now()
+                extras: order.extras || [],
+                discount: order.discount || 0
             }])
             .select()
             .single();
@@ -58,8 +59,8 @@ export const orderService = {
                 description: order.details,
                 status: order.status,
                 value: order.value,
-                extras: order.extras || []
-                // delivery_date: order.deliveryDate // Add if we have this in types
+                extras: order.extras || [],
+                discount: order.discount || 0
             })
             .eq('id', order.id)
             .select()

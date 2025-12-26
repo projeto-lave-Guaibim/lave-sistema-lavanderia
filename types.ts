@@ -18,6 +18,7 @@ export interface Client {
   memberSince: string;
   type?: 'Pessoa Física' | 'Pessoa Jurídica';
   email?: string;
+  document?: string; // CPF or CNPJ
   notes?: string;
 }
 

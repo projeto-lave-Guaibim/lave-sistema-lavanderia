@@ -159,23 +159,23 @@ export const CashFlowScreen: React.FC = () => {
                     <div className="bg-primary rounded-xl p-6 text-white shadow-lg shadow-blue-200 dark:shadow-none relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10"><span className="material-symbols-outlined" style={{ fontSize: '96px' }}>account_balance_wallet</span></div>
                         <p className="text-blue-100 text-sm font-medium mb-1">Lucro Líquido (Realizado)</p>
-                        <div className="flex items-baseline gap-1"><span className="text-3xl font-bold tracking-tight">R$ {totals.profit.toFixed(2).replace('.',',')}</span></div>
+                        <div className="flex items-baseline gap-1"><span className="text-3xl font-bold tracking-tight">R$ {totals.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                         {totals.projectedIncome > 0 && (
                             <div className="mt-4 flex items-center gap-2 text-xs bg-white/20 w-fit px-3 py-1.5 rounded-full text-white">
                                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>pending</span>
-                                <span>+ R$ {totals.projectedIncome.toFixed(2).replace('.',',')} a receber</span>
+                                <span>+ R$ {totals.projectedIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} a receber</span>
                             </div>
                         )}
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-white dark:bg-[#1a222d] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
                             <div className="flex items-center gap-2 mb-3"><div className="bg-green-100 dark:bg-green-900/30 p-1.5 rounded-lg text-success"><span className="material-symbols-outlined">arrow_downward</span></div><span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Receitas</span></div>
-                            <p className="text-[#111418] dark:text-white text-lg font-bold">R$ {totals.income.toFixed(2).replace('.',',')}</p>
+                            <p className="text-[#111418] dark:text-white text-lg font-bold">R$ {totals.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             <p className="text-xs text-gray-400 mt-1">Confirmadas</p>
                         </div>
                         <div className="bg-white dark:bg-[#1a222d] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between">
                             <div className="flex items-center gap-2 mb-3"><div className="bg-red-100 dark:bg-red-900/30 p-1.5 rounded-lg text-danger"><span className="material-symbols-outlined">arrow_upward</span></div><span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Despesas</span></div>
-                            <p className="text-[#111418] dark:text-white text-lg font-bold">R$ {totals.expense.toFixed(2).replace('.',',')}</p>
+                            <p className="text-[#111418] dark:text-white text-lg font-bold">R$ {totals.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             <p className="text-xs text-gray-400 mt-1">Total</p>
                         </div>
                     </div>
@@ -224,7 +224,7 @@ const TransactionItem: React.FC<{ transaction: Transaction; isAdmin?: boolean; o
         <div className="flex flex-col flex-1 justify-center"><p className="text-[#111418] dark:text-white text-base font-medium leading-normal line-clamp-1">{transaction.description}</p><p className="text-[#637288] dark:text-gray-400 text-sm font-normal leading-normal">{transaction.clientName} • {transaction.date}</p></div>
         <div className="shrink-0 text-right flex items-center gap-3">
             <div>
-                <p className="text-success text-base font-bold leading-normal">+ R$ {transaction.amount.toFixed(2).replace('.',',')}</p>
+                <p className="text-success text-base font-bold leading-normal">+ R$ {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 <span className={`text-[10px] px-1.5 py-0.5 rounded ${transaction.paid ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>{transaction.paid ? 'Pago' : 'Pendente'}</span>
             </div>
             {isAdmin && onDelete && (

@@ -199,16 +199,16 @@ const DashboardScreen: React.FC = () => {
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20">
                             <div className="flex items-center gap-2 text-white/80"><span className="material-symbols-outlined text-[20px]">account_balance_wallet</span><p className="text-sm font-medium">Lucro Líquido</p></div>
                             <div>
-                                <p className="text-white text-3xl font-bold tracking-tight">R$ {financials.profit.toFixed(2).replace('.',',')}</p>
+                                <p className="text-white text-3xl font-bold tracking-tight">R$ {financials.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">payments</span><p className="text-sm font-medium">Receita</p></div><div className="size-2 rounded-full bg-green-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.income.toFixed(2).replace('.',',')}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">shopping_cart</span><p className="text-sm font-medium">Despesa</p></div><div className="size-2 rounded-full bg-red-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.expense.toFixed(2).replace('.',',')}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                     </div>
 
@@ -269,7 +269,7 @@ const TransactionItem: React.FC<{ transaction: Transaction }> = ({ transaction }
         <div className="flex flex-col flex-1 justify-center"><p className="text-[#111418] dark:text-white text-base font-medium leading-normal line-clamp-1">{transaction.description}</p><p className="text-[#637288] dark:text-gray-400 text-sm font-normal leading-normal">{transaction.clientName} • {transaction.date}</p></div>
         <div className="shrink-0 text-right">
             <p className={`${transaction.type === TransactionType.Receita ? 'text-green-600' : 'text-red-600'} text-base font-bold leading-normal`}>
-                {transaction.type === TransactionType.Receita ? '+' : '-'} R$ {transaction.amount.toFixed(2).replace('.',',')}
+                {transaction.type === TransactionType.Receita ? '+' : '-'} R$ {transaction.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <span className={`text-[10px] px-1.5 py-0.5 rounded ${transaction.paid ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>{transaction.paid ? 'Pago' : 'Pendente'}</span>
         </div>

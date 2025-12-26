@@ -180,6 +180,7 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [users, setUsers] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
     const [isAdding, setIsAdding] = React.useState(false);
+    const [editingUser, setEditingUser] = React.useState<any | null>(null);
 
     // Form states
     const [name, setName] = React.useState('');
@@ -222,9 +223,65 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
+    const handleEditUser = (user: any) => {
+        setEditingUser(user);
+        setName(user.name);
+        setUsername(user.username);
+        setEmail(user.email);
+        setRole(user.role);
+        setPassword(''); // Don't pre-fill password
+    };
+
+    const handleUpdateUser = async () => {
+        if (!name || !username || !email) return alert('Preencha todos os campos obrigatórios');
+        setSubmitting(true);
+        try {
+            // Update user data
+            await adminService.updateUser(editingUser.id, { name, username, email, role });
+            
+            // Update password if provided
+            if (password) {
+                await adminService.resetPassword(editingUser.id, password);
+            }
+            
+            alert('Usuário atualizado com sucesso!');
+            setEditingUser(null);
+            setName(''); setUsername(''); setEmail(''); setPassword(''); setRole('user');
+            loadUsers();
+        } catch (error: any) {
+            alert('Erro ao atualizar usuário: ' + error.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
+            return;
+        }
+
+        try {
+            await adminService.deleteUser(userId);
+            alert('Usuário excluído com sucesso!');
+            loadUsers();
+        } catch (error: any) {
+            alert('Erro ao excluir usuário: ' + error.message);
+        }
+    };
+
+    const resetForm = () => {
+        setIsAdding(false);
+        setEditingUser(null);
+        setName('');
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        setRole('user');
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#1a222d] rounded-2xl w-full max-w-2xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
+            <div className="bg-white dark:bg-[#1a222d] rounded-2xl w-full max-w-3xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-[#111418] dark:text-white">Gerenciar Usuários</h3>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
@@ -232,22 +289,24 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     </button>
                 </div>
 
-                {isAdding ? (
+                {(isAdding || editingUser) ? (
                     <div className="space-y-4">
-                        <h4 className="font-bold text-primary">Novo Usuário</h4>
+                        <h4 className="font-bold text-primary">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <input placeholder="Nome Completo" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={name} onChange={e => setName(e.target.value)} />
                             <input placeholder="Usuário (Login)" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={username} onChange={e => setUsername(e.target.value)} />
                             <input placeholder="E-mail" type="email" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={email} onChange={e => setEmail(e.target.value)} />
-                            <input placeholder="Senha" type="password" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={password} onChange={e => setPassword(e.target.value)} />
+                            <input placeholder={editingUser ? "Nova Senha (deixe vazio para manter)" : "Senha"} type="password" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={password} onChange={e => setPassword(e.target.value)} />
                             <select className="form-select h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={role} onChange={e => setRole(e.target.value as any)}>
                                 <option value="user">Usuário Padrão</option>
                                 <option value="admin">Administrador</option>
                             </select>
                         </div>
                         <div className="flex gap-3 pt-2">
-                            <button onClick={() => setIsAdding(false)} className="flex-1 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 font-bold text-gray-700 dark:text-gray-300">Cancelar</button>
-                            <button onClick={handleCreateUser} disabled={submitting} className="flex-1 h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50">{submitting ? 'Criando...' : 'Criar Usuário'}</button>
+                            <button onClick={resetForm} className="flex-1 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 font-bold text-gray-700 dark:text-gray-300">Cancelar</button>
+                            <button onClick={editingUser ? handleUpdateUser : handleCreateUser} disabled={submitting} className="flex-1 h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50">
+                                {submitting ? (editingUser ? 'Atualizando...' : 'Criando...') : (editingUser ? 'Atualizar Usuário' : 'Criar Usuário')}
+                            </button>
                         </div>
                     </div>
                 ) : (
@@ -259,12 +318,30 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
                         <div className="space-y-3">
                             {loading ? <p className="text-center text-gray-500">Carregando...</p> : users.map(u => (
-                                <div key={u.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                    <div>
+                                <div key={u.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                                    <div className="flex-1">
                                         <p className="font-bold text-[#111418] dark:text-white">{u.name}</p>
-                                        <p className="text-sm text-gray-500">@{u.username} • {u.role}</p>
+                                        <p className="text-sm text-gray-500">@{u.username} • {u.email}</p>
+                                        <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded">
+                                            {u.role === 'admin' ? 'Administrador' : 'Usuário'}
+                                        </span>
                                     </div>
-                                    <span className="text-xs text-gray-400">{u.email}</span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleEditUser(u)}
+                                            className="size-10 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                                            title="Editar usuário"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">edit</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteUser(u.id, u.name)}
+                                            className="size-10 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                            title="Excluir usuário"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
