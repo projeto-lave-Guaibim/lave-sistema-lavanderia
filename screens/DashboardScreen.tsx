@@ -31,7 +31,7 @@ const DashboardScreen: React.FC = () => {
 
                 // 1. Merge Orders and Transactions
                 const orderTransactions: Transaction[] = ordersData.map(order => ({
-                    id: 100000 + order.id,
+                    id: (100000 + order.id).toString(),
                     type: TransactionType.Receita,
                     description: `Pedido #${order.id.toString().padStart(4, '0')} - ${order.client.name}`,
                     clientName: order.client.name,
@@ -169,6 +169,19 @@ const DashboardScreen: React.FC = () => {
         );
     };
 
+    // Transaction Click Handler
+    const handleTransactionClick = (transaction: Transaction) => {
+        // Check if it's an order based on description format "Pedido #XXXX"
+        if (transaction.description.startsWith('Pedido #')) {
+            const orderIdMatch = transaction.description.match(/#(\d+)/);
+            if (orderIdMatch && orderIdMatch[1]) {
+                // Remove leading zeros to get the actual ID
+                const orderId = parseInt(orderIdMatch[1], 10);
+                navigate(`/orders/${orderId}`);
+            }
+        }
+    };
+
     if (loading) return <div className="flex justify-center items-center h-full"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
 
     return (
@@ -248,7 +261,7 @@ const DashboardScreen: React.FC = () => {
                         <div className="flex flex-col bg-white dark:bg-[#1a222d] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
                             {transactions.length > 0 ? (
                                 transactions.slice(0, 10).map((tx, index) => (
-                                    <TransactionItem key={tx.id} transaction={tx} />
+                                    <TransactionItem key={tx.id} transaction={tx} onClick={() => handleTransactionClick(tx)} />
                                 ))
                             ) : (
                                 <div className="text-center text-gray-500 py-8">Nenhuma movimentação recente.</div>
@@ -261,8 +274,8 @@ const DashboardScreen: React.FC = () => {
     );
 };
 
-const TransactionItem: React.FC<{ transaction: Transaction }> = ({ transaction }) => (
-    <div className="flex items-center gap-4 px-4 py-4 border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#232c38] transition-colors cursor-pointer group">
+const TransactionItem: React.FC<{ transaction: Transaction; onClick?: () => void }> = ({ transaction, onClick }) => (
+    <div onClick={onClick} className="flex items-center gap-4 px-4 py-4 border-b border-gray-50 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#232c38] transition-colors cursor-pointer group">
         <div className={`flex items-center justify-center rounded-lg shrink-0 size-12 transition-colors ${transaction.type === TransactionType.Receita ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-red-100 dark:bg-red-900/20 text-red-600'}`}>
             <span className="material-symbols-outlined">{transaction.icon || (transaction.type === TransactionType.Receita ? 'trending_up' : 'trending_down')}</span>
         </div>

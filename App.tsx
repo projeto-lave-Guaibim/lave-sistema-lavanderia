@@ -45,7 +45,6 @@ const App = () => {
                 <HashRouter>
                     <Routes>
                         <Route path="/login" element={<LoginScreen />} />
-                        <Route path="/register" element={<RegisterScreen />} />
                         <Route path="/" element={<AppLayout />}>
                             <Route index element={<Navigate to="/dashboard" replace />} />
                             <Route path="dashboard" element={<DashboardScreen />} />

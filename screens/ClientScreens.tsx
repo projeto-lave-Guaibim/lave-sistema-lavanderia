@@ -9,11 +9,13 @@ export const ClientsListScreen: React.FC = () => {
     const navigate = useNavigate();
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const [clients, setClients] = useState<Client[]>([]);
+    const [filteredClients, setFilteredClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showModal, setShowModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | undefined>(undefined);
+    const [filterType, setFilterType] = useState<string>('all');
 
     useEffect(() => {
         fetchClients();
@@ -33,18 +35,31 @@ export const ClientsListScreen: React.FC = () => {
 
     const handleClientClick = (client: Client) => {
         setSelectedClient(client);
-        setIsModalOpen(true);
+        setShowModal(true);
     };
 
     const handleAddNew = () => {
         setSelectedClient(undefined);
-        setIsModalOpen(true);
+        setShowModal(true);
     };
 
-    const filteredClients = clients.filter(client => 
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.phone.includes(searchTerm)
-    );
+    useEffect(() => {
+        // Apply filters
+        let filtered = clients;
+        
+        if (searchTerm) {
+            filtered = filtered.filter(client => 
+                client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (client.phone && client.phone.includes(searchTerm))
+            );
+        }
+        
+        if (filterType !== 'all') {
+            filtered = filtered.filter(client => client.type === filterType);
+        }
+        
+        setFilteredClients(filtered);
+    }, [clients, searchTerm, filterType]);
 
     return (
         <>
@@ -53,10 +68,25 @@ export const ClientsListScreen: React.FC = () => {
                 onMenuClick={toggleSidebar}
                 showSearch
                 onSearch={setSearchTerm}
-                rightActions={
-                    <button className="flex items-center justify-center rounded-full size-10 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[#111418] dark:text-white">filter_list</span></button>
-                }
+
             />
+            <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar items-center bg-white dark:bg-[#111821] shadow-sm z-10 border-b border-gray-100 dark:border-gray-800">
+                {[
+                    { label: 'Todos', value: 'all' },
+                    { label: 'Pessoa Física', value: 'Pessoa Física' },
+                    { label: 'Empresa', value: 'Pessoa Jurídica' },
+                    { label: 'Turista', value: 'Turista' }
+                ].map(filter => (
+                    <button 
+                        key={filter.value} 
+                        onClick={() => setFilterType(filter.value)} 
+                        className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${filterType === filter.value ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-[#f0f2f4] dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-gray-300'}`}
+                    >
+                        <p className="text-sm font-medium leading-normal">{filter.label}</p>
+                    </button>
+                ))}
+            </div>
+
             <main className="flex-1 overflow-y-auto no-scrollbar bg-background-light dark:bg-background-dark p-4 pb-24">
                 {loading ? (
                     <div className="flex justify-center items-center h-40">
@@ -70,21 +100,22 @@ export const ClientsListScreen: React.FC = () => {
                         <button onClick={() => window.location.reload()} className="mt-4 text-primary font-bold text-sm hover:underline">Tentar novamente</button>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-3">
-                        {filteredClients.map(client => (
-                            <div key={client.id} onClick={() => handleClientClick(client)} className="flex items-center gap-4 bg-surface-light dark:bg-surface-dark px-4 py-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:scale-[0.99]">
+                    <div className="flex flex-col bg-white dark:bg-[#1a222d] rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                        {filteredClients.map((client, index) => (
+                            <div key={client.id} onClick={() => handleClientClick(client)} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${index !== filteredClients.length - 1 ? 'border-b border-gray-100 dark:border-gray-800' : ''}`}>
                                 <div className="flex flex-col justify-center flex-1 min-w-0">
-                                    <p className="text-[#111418] dark:text-white text-base font-bold leading-normal line-clamp-1">{client.name}</p>
-                                    <p className="text-[#637288] dark:text-gray-400 text-sm font-medium leading-normal line-clamp-1">{client.phone}</p>
+                                    <p className="text-[#111418] dark:text-white text-sm font-semibold leading-tight line-clamp-1">{client.name}</p>
+                                    <p className="text-[#637288] dark:text-gray-400 text-xs font-normal leading-normal line-clamp-1">{client.phone}</p>
                                 </div>
                                 <button 
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         openWhatsApp(client.phone);
                                     }}
-                                    className="shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                    className="shrink-0 h-8 w-8 flex items-center justify-center rounded-full text-gray-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                                    title="WhatsApp"
                                 >
-                                    <span className="material-symbols-outlined text-[20px]">call</span>
+                                    <span className="material-symbols-outlined text-[18px]">call</span>
                                 </button>
                             </div>
                         ))}
@@ -96,11 +127,11 @@ export const ClientsListScreen: React.FC = () => {
             </main>
             <button onClick={handleAddNew} className="fixed bottom-[90px] right-4 bg-primary hover:bg-primary-dark text-white rounded-full size-14 shadow-lg shadow-blue-500/40 flex items-center justify-center transition-all transform hover:scale-105 z-20"><span className="material-symbols-outlined">add</span></button>
             
-            {isModalOpen && (
+            {showModal && (
                 <ClientModal 
                     client={selectedClient}
-                    onClose={() => setIsModalOpen(false)} 
-                    onSuccess={() => { setIsModalOpen(false); fetchClients(); }} 
+                    onClose={() => setShowModal(false)} 
+                    onSuccess={() => { setShowModal(false); fetchClients(); }} 
                 />
             )}
         </>
@@ -163,9 +194,10 @@ const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuccess: (
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tipo de cliente</label>
-                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
+                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
                             <option value="Pessoa Física">Pessoa Física</option>
                             <option value="Pessoa Jurídica">Pessoa Jurídica</option>
+                            <option value="Turista">Turista</option>
                         </select>
                     </div>
 

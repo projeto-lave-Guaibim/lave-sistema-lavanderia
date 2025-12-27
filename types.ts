@@ -16,7 +16,7 @@ export interface Client {
   initials?: string;
   tags: string[];
   memberSince: string;
-  type?: 'Pessoa Física' | 'Pessoa Jurídica';
+  type?: 'Pessoa Física' | 'Pessoa Jurídica' | 'Turista';
   email?: string;
   document?: string; // CPF or CNPJ
   notes?: string;

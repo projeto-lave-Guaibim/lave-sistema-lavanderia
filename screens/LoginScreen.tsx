@@ -114,18 +114,6 @@ const LoginScreen: React.FC = () => {
                             )}
                         </button>
                     </form>
-
-                    <div className="mt-6 text-center">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Não tem uma conta?{' '}
-                            <button
-                                onClick={() => navigate('/register')}
-                                className="text-primary font-semibold hover:underline"
-                            >
-                                Criar conta
-                            </button>
-                        </p>
-                    </div>
                 </div>
 
                 <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">

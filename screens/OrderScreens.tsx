@@ -12,6 +12,7 @@ export const OrdersListScreen: React.FC = () => {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Todos');
+    const [activeCategoryFilter, setActiveCategoryFilter] = useState('Todas');
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -30,9 +31,13 @@ export const OrdersListScreen: React.FC = () => {
     const filters = ['Todos', 'Pendente', 'Lavando', 'Pronto', 'Entregue'];
 
     const filteredOrders = orders.filter(order => {
-        if (activeFilter === 'Todos') return true;
-        return order.status === activeFilter;
+        const matchesStatus = activeFilter === 'Todos' || order.status === activeFilter;
+        const matchesCategory = activeCategoryFilter === 'Todas' || order.service === activeCategoryFilter;
+        return matchesStatus && matchesCategory;
     });
+
+    // Get unique services for filter
+    const services = Array.from(new Set(orders.map(o => o.service))).filter(Boolean).sort();
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -51,7 +56,16 @@ export const OrdersListScreen: React.FC = () => {
                 onMenuClick={toggleSidebar}
                 rightActions={
                     <div className="flex items-center gap-2">
-                        <button className="flex items-center justify-center rounded-full size-10 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[#111418] dark:text-white">search</span></button>
+                        <select 
+                            value={activeCategoryFilter}
+                            onChange={(e) => setActiveCategoryFilter(e.target.value)}
+                            className="bg-white dark:bg-gray-800 border-none text-sm font-medium text-gray-700 dark:text-gray-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-primary outline-none cursor-pointer"
+                        >
+                            <option value="Todas">Todas as Categorias</option>
+                            {services.map(service => (
+                                <option key={service} value={service}>{service}</option>
+                            ))}
+                        </select>
                         <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-8 ring-2 ring-white dark:ring-gray-700 shadow-sm" style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuDmPHpIUE4i7dS3UbI0BA_gk9yiQN9Z0yJsG5-mxJAvUVyKsWC8oBO1q4hJMDbSzQXBazNDO8iksfWNSzT9VChGaOhuRS4fAAxnW8zH5smroyIX9io6EVNx_79v_a3EQhLaPgbtX4o8eJ89svXZp1NXGkM36DXNbeBHw_2k52jGTgZhS4TvNu8m71ujnClsidaHfX86yz97Jv6BJlYS7zG7l9tHqk8_Du8_VLo-9H2G7XCouSi1g1ryzaVTJ7Ks8-SxRub7LwWl5GKa")` }}></div>
                     </div>
                 }
@@ -63,7 +77,7 @@ export const OrdersListScreen: React.FC = () => {
                     </button>
                 ))}
             </div>
-            <main className="flex-1 overflow-y-auto no-scrollbar p-4 pt-2">
+            <main className="flex-1 overflow-y-auto no-scrollbar p-4 pt-2 pb-24">
                 {loading ? (
                     <div className="flex justify-center items-center h-40">
                         <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
@@ -117,6 +131,8 @@ export const NewOrderScreen: React.FC = () => {
     const [selectedExtras, setSelectedExtras] = useState<Extra[]>([]);
     const [details, setDetails] = useState('');
     const [discount, setDiscount] = useState('0');
+
+    const [kgCategory, setKgCategory] = useState<string>('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -185,7 +201,7 @@ export const NewOrderScreen: React.FC = () => {
             const totalValue = calculateTotal();
             const itemsDescription = selectedService.type === 'item' 
                 ? selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ')
-                : `${weight}kg`;
+                : `${weight}kg${kgCategory ? ` (${kgCategory})` : ''}`;
 
             const extrasDescription = selectedExtras.length > 0 
                 ? `Extras: ${selectedExtras.map(e => e.name).join(', ')}` 
@@ -276,18 +292,35 @@ export const NewOrderScreen: React.FC = () => {
                         </div>
 
                         {selectedService.type === 'kg' ? (
-                            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 text-center space-y-4">
-                                <label className="block text-[#111418] dark:text-white text-lg font-bold">Peso Total</label>
-                                <div className="flex items-center justify-center gap-2">
-                                    <input 
-                                        type="number" 
-                                        value={weight} 
-                                        onChange={e => setWeight(e.target.value)} 
-                                        className="w-32 text-center bg-transparent text-5xl font-bold text-primary border-b-2 border-primary focus:outline-none placeholder-primary/30" 
-                                        placeholder="0.0" 
-                                        autoFocus
-                                    />
-                                    <span className="text-2xl font-bold text-gray-400 mt-4">kg</span>
+                            <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 text-center space-y-6">
+                                <div>
+                                    <label className="block text-[#111418] dark:text-white text-base font-bold mb-3">O que será lavado?</label>
+                                    <div className="flex flex-wrap gap-2 justify-center">
+                                        {['Roupas no geral', 'Cama mesa e banho', 'Cortinas', 'Outros'].map(cat => (
+                                            <button
+                                                key={cat}
+                                                onClick={() => setKgCategory(cat)}
+                                                className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${kgCategory === cat ? 'bg-primary text-white border-primary shadow-md shadow-primary/30' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                            >
+                                                {cat}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {!kgCategory && <p className="text-red-500 text-xs mt-2">* Selecione uma categoria</p>}
+                                </div>
+                                <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
+                                    <label className="block text-[#111418] dark:text-white text-lg font-bold">Peso Total</label>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <input 
+                                            type="number" 
+                                            value={weight} 
+                                            onChange={e => setWeight(e.target.value)} 
+                                            className="w-32 text-center bg-transparent text-5xl font-bold text-primary border-b-2 border-primary focus:outline-none placeholder-primary/30" 
+                                            placeholder="0.0" 
+                                            autoFocus
+                                        />
+                                        <span className="text-2xl font-bold text-gray-400 mt-4">kg</span>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -319,7 +352,7 @@ export const NewOrderScreen: React.FC = () => {
                                 <span className="text-gray-500">Total Estimado</span>
                                 <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
-                            <button onClick={() => setStep(4)} disabled={calculateTotal() === 0} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
+                            <button onClick={() => setStep(4)} disabled={calculateTotal() === 0 || (selectedService.type === 'kg' && !kgCategory)} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
                                 Continuar
                             </button>
                         </div>

@@ -12,6 +12,7 @@ export const clientService = {
         
         return (data || []).map((client: any) => ({
             ...client,
+            phone: client.mobile, // Map mobile from DB to phone for frontend
             tags: client.tags || []
         }));
     },
