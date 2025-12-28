@@ -106,12 +106,18 @@ export const generateOrderPDF = async (order: Order) => {
     yOffset += 6;
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`Tel: ${order.client.phone}`, 20, yOffset);
+    
+    // Always attempt to print phone, sometimes it might be missing from object but user says it's registered.
+    // We'll print what we have or a placeholder if needed, but 'order.client.phone' is required in interface.
+    doc.text(`Tel: ${order.client.phone || ''}`, 20, yOffset);
     
     if (order.client.email) {
         yOffset += 5;
         doc.text(`Email: ${order.client.email}`, 20, yOffset);
     }
+    
+    // Force document print if available
+
     
     if (order.client.document) {
         yOffset += 5;
@@ -129,25 +135,80 @@ export const generateOrderPDF = async (order: Order) => {
     doc.setTextColor(lightGray[0], lightGray[1], lightGray[2]);
     doc.text("DATAS", 115, cardY + 6);
     
-    const today = new Date();
-    const deliveryDate = new Date(today);
-    deliveryDate.setDate(deliveryDate.getDate() + 2);
+    // Parse Dates
+    // Creation Date (Prioritize "Data do Pedido" from details, else timestamp, else today)
+    let creationDate = new Date();
+    
+    const orderDateMatch = order.details.match(/Data do Pedido: (\d{2}\/\d{2}\/\d{4})/);
+    if (orderDateMatch) {
+        // Parse dd/mm/yyyy
+        const [day, month, year] = orderDateMatch[1].split('/').map(Number);
+        creationDate = new Date(year, month - 1, day);
+    } else if (order.timestamp) {
+        const parsedDate = new Date(order.timestamp);
+        if (!isNaN(parsedDate.getTime())) {
+            creationDate = parsedDate;
+        }
+    }
+    
+    // Delivery Date Parsing from details
+    let deliveryText = "A combinar";
+    const deliveryMatch = order.details.match(/Previsão: (\d{2}\/\d{2}\/\d{4})/);
+    if (deliveryMatch) {
+         deliveryText = deliveryMatch[1];
+    }
     
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(`Emissao: ${today.toLocaleDateString('pt-BR')}`, 115, cardY + 14);
-    doc.text(`Previsao: ${deliveryDate.toLocaleDateString('pt-BR')}`, 115, cardY + 20);
+    doc.text(`Emissão: ${creationDate.toLocaleDateString('pt-BR')}`, 115, cardY + 14);
+    doc.text(`Previsão: ${deliveryText}`, 115, cardY + 20);
+
+    // Prepare Service Logic
+    const hasUnderwearTax = order.details.includes('Taxa Roupa Íntima: R$ 20,00');
+    
+    // Calculate Base Value logic...
+    let extrasTotal = 0;
+    if (order.extras) {
+        extrasTotal = order.extras.reduce((acc, extra) => acc + extra.price, 0);
+    }
+    
+    const discountVal = order.discount || 0;
+    const grossTotal = (order.value || 0) + discountVal;
+    const derivedBaseValue = grossTotal - extrasTotal - (hasUnderwearTax ? 20 : 0);
+
+    // Clean Details
+    // Remove tags from details string
+    let cleanDetails = order.details
+        .replace(/Taxa Roupa Íntima: R\$ 20,00\.? ?/g, '')
+        .replace(/Previsão: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+        .replace(/Data do Pedido: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+        .replace(/Extras: [^.]+\.? ?/g, '')
+        .trim();
+        
+    // Format details with bullets
+    const detailItems = cleanDetails.split(/\.\s+/).filter(Boolean);
+    const formattedDetails = detailItems.map(item => `- ${item}`).join('\n');
 
     // Services Table
     const tableBody: any[] = [
         [
-            { content: order.service + (order.details ? `\n${order.details}` : ''), styles: { fontStyle: 'bold' } },
+            { content: order.service + (formattedDetails ? `\n${formattedDetails}` : ''), styles: { fontStyle: 'bold' } },
             '1',
-            `R$ ${order.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-            `R$ ${order.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            `R$ ${derivedBaseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            `R$ ${derivedBaseValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
         ]
     ];
+    
+    // Add Tax Row if exists
+    if (hasUnderwearTax) {
+        tableBody.push([
+            'Taxa Roupa Íntima',
+            '1',
+            'R$ 20,00',
+            'R$ 20,00'
+        ]);
+    }
 
     // Add Extras to table if any
     if (order.extras && order.extras.length > 0) {
@@ -175,7 +236,7 @@ export const generateOrderPDF = async (order: Order) => {
         },
         styles: {
             fontSize: 9,
-            cellPadding: 5,
+            cellPadding: 3, // Reduced padding for tighter spacing
             textColor: [60, 60, 60]
         },
         columnStyles: {
@@ -184,21 +245,14 @@ export const generateOrderPDF = async (order: Order) => {
             2: { cellWidth: 35, halign: 'right' },
             3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' }
         },
-        alternateRowStyles: {
-            fillColor: [252, 252, 253]
-        },
-        didDrawPage: function(data) {
-            // Add border to table
-            doc.setDrawColor(220, 220, 220);
-            doc.setLineWidth(0.5);
-        }
+        // ...
     });
 
     // Payment Summary Box
     const finalY = (doc as any).lastAutoTable.finalY || 120;
     const summaryY = finalY + 10;
     
-    // Calculate values
+    // ... calculations ...
     let subtotal = order.value || 0;
     if (order.extras && order.extras.length > 0) {
         subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
@@ -206,6 +260,7 @@ export const generateOrderPDF = async (order: Order) => {
     const discount = order.discount || 0;
     const total = Math.max(0, subtotal - discount);
     
+    // ... drawing ...
     doc.setDrawColor(220, 220, 220);
     doc.setFillColor(248, 249, 250);
     doc.roundedRect(120, summaryY, 75, 30, 3, 3, 'FD');
@@ -228,7 +283,7 @@ export const generateOrderPDF = async (order: Order) => {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text("Total a Pagar", 125, summaryY + 25);
+    doc.text("Valor Total", 125, summaryY + 25); // Changed text
     
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text(`R$ ${total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 190, summaryY + 25, { align: "right" });
@@ -252,7 +307,7 @@ export const generateOrderPDF = async (order: Order) => {
     doc.setFont("helvetica", "normal");
     doc.text("Lavê. Cuidar bem é a nossa essência.", 105, footerY + 18, { align: "center" });
 
-    // Save with formatted filename
-    const clientName = order.client.name.replace(/\s+/g, '_').normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    doc.save(`Lavê_Pedido_${order.id}_${clientName}.pdf`);
+    // Save with formatted filename: Lavê - Pedido 0004 - Ivan Andrade
+    const formattedId = order.id.toString().padStart(4, '0');
+    doc.save(`Lavê - Pedido ${formattedId} - ${order.client.name}.pdf`);
 };

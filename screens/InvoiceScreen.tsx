@@ -50,9 +50,7 @@ const InvoiceScreen: React.FC = () => {
         }
     };
 
-    const today = new Date();
-    const deliveryDate = new Date(today);
-    deliveryDate.setDate(deliveryDate.getDate() + 2);
+
 
     return (
         <div className="bg-background-light dark:bg-background-dark min-h-screen overflow-y-auto">
@@ -139,11 +137,22 @@ const InvoiceScreen: React.FC = () => {
                         <div className="space-y-2">
                             <p className="text-gray-700 dark:text-white flex justify-between">
                                 <span className="font-semibold">Emissão:</span> 
-                                <span>{today.toLocaleDateString('pt-BR')}</span>
+                                <span>{(() => {
+                                    // Parse Data do Pedido from details if exists
+                                    const match = order.details.match(/Data do Pedido: (\d{2}\/\d{2}\/\d{4})/);
+                                    if (match) return match[1];
+
+                                    if (!order.timestamp) return new Date().toLocaleDateString('pt-BR');
+                                    const d = new Date(order.timestamp);
+                                    return isNaN(d.getTime()) ? new Date().toLocaleDateString('pt-BR') : d.toLocaleDateString('pt-BR');
+                                })()}</span>
                             </p>
                             <p className="text-gray-700 dark:text-white flex justify-between">
                                 <span className="font-semibold">Previsão:</span> 
-                                <span>{deliveryDate.toLocaleDateString('pt-BR')}</span>
+                                <span>{(() => {
+                                    const match = order.details.match(/Previsão: (\d{2}\/\d{2}\/\d{4})/);
+                                    return match ? match[1] : 'A combinar';
+                                })()}</span>
                             </p>
                         </div>
                     </div>
@@ -164,17 +173,53 @@ const InvoiceScreen: React.FC = () => {
                             <tr className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
                                 <td className="px-6 py-5">
                                     <div className="font-bold text-gray-900 dark:text-white">{order.service}</div>
-                                    {order.details && <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{order.details}</div>}
+                                    {order.details && (
+                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 whitespace-pre-line leading-tight">
+                                            {order.details
+                                                .replace(/Taxa Roupa Íntima: R\$ 20,00\.? ?/g, '')
+                                                .replace(/Previsão: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+                                                .replace(/Data do Pedido: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+                                                .replace(/Extras: [^.]+\.? ?/g, '')
+                                                .trim()
+                                                .split(/\.\s+/)
+                                                .filter(Boolean)
+                                                .map(item => `- ${item}`)
+                                                .join('\n')}
+                                        </div>
+                                    )}
                                 </td>
                                 <td className="px-6 py-5 text-center text-gray-700 dark:text-gray-300">1</td>
-                                <div className="hidden">{/* Calculando valor do serviço base para exibição */}</div>
+                                <div className="hidden">{/* Calculando valor do serviço base */}</div>
                                 <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">
-                                    R$ {(order.value && order.extras ? (order.value + (order.discount || 0) - order.extras.reduce((acc, e) => acc + e.price, 0)) : order.value)?.toFixed(2).replace('.', ',')}
+                                    R$ {(() => {
+                                        let baseVal = (order.value || 0) + (order.discount || 0);
+                                        if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
+                                        if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
+                                        return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    })()}
                                 </td>
                                 <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">
-                                    R$ {(order.value && order.extras ? (order.value + (order.discount || 0) - order.extras.reduce((acc, e) => acc + e.price, 0)) : order.value)?.toFixed(2).replace('.', ',')}
+                                    R$ {(() => {
+                                        let baseVal = (order.value || 0) + (order.discount || 0);
+                                        if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
+                                        if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
+                                        return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                    })()}
                                 </td>
                             </tr>
+                            
+                            {/* Tax Row */}
+                            {order.details.includes('Taxa Roupa Íntima: R$ 20,00') && (
+                                <tr className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
+                                    <td className="px-6 py-4">
+                                        <div className="font-medium text-gray-900 dark:text-white">Taxa Roupa Íntima</div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center text-gray-700 dark:text-gray-300">1</td>
+                                    <td className="px-6 py-4 text-right text-gray-700 dark:text-gray-300">R$ 20,00</td>
+                                    <td className="px-6 py-4 text-right font-semibold text-gray-900 dark:text-white">R$ 20,00</td>
+                                </tr>
+                            )}
+
                             {/* Render Extras */}
                             {order.extras?.map(extra => (
                                 <tr key={extra.id} className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">

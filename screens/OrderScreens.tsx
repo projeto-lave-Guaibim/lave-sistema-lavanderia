@@ -111,8 +111,6 @@ export const OrdersListScreen: React.FC = () => {
 import { catalogService } from '../services/catalogService';
 import { Service, CatalogItem, Extra } from '../types';
 
-// ... (existing imports)
-
 export const NewOrderScreen: React.FC = () => {
     const navigate = useNavigate();
     const [step, setStep] = useState(1);
@@ -133,6 +131,9 @@ export const NewOrderScreen: React.FC = () => {
     const [discount, setDiscount] = useState('0');
 
     const [kgCategory, setKgCategory] = useState<string>('');
+    const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
+    const [deliveryDate, setDeliveryDate] = useState('');
+    const [underwearTax, setUnderwearTax] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -189,8 +190,16 @@ export const NewOrderScreen: React.FC = () => {
             }
         }
         total += selectedExtras.reduce((acc, curr) => acc + curr.price, 0);
+        if (underwearTax) total += 20;
+
         const discountAmount = parseFloat(discount) || 0;
         return Math.max(0, total - discountAmount);
+    };
+
+    const handleDiscountChange = (delta: number) => {
+        const current = parseFloat(discount) || 0;
+        const next = Math.max(0, current + delta);
+        setDiscount(next.toString());
     };
 
     const handleSubmit = async () => {
@@ -207,11 +216,31 @@ export const NewOrderScreen: React.FC = () => {
                 ? `Extras: ${selectedExtras.map(e => e.name).join(', ')}` 
                 : '';
 
+            const taxDescription = underwearTax ? 'Taxa Roupa Íntima: R$ 20,00' : '';
+            
+            // Format dates avoiding timezone issues
+            const formatDate = (d: string) => {
+                const [y, m, day] = d.split('-');
+                return `${day}/${m}/${y}`;
+            };
+
+            const deliveryDescription = deliveryDate ? `Previsão: ${formatDate(deliveryDate)}` : '';
+            const orderDateDescription = orderDate ? `Data do Pedido: ${formatDate(orderDate)}` : '';
+
+            const finalDetails = [
+                itemsDescription,
+                extrasDescription,
+                taxDescription,
+                deliveryDescription,
+                orderDateDescription,
+                details
+            ].filter(Boolean).join('. ');
+
             const newOrder: Order = {
                 id: 0,
                 client: selectedClient,
                 service: selectedService.name,
-                details: `${itemsDescription}. ${extrasDescription} ${details}`,
+                details: finalDetails,
                 value: totalValue,
                 status: OrderStatus.Pendente,
                 extras: selectedExtras,
@@ -232,19 +261,17 @@ export const NewOrderScreen: React.FC = () => {
     if (loading) return <div className="flex justify-center items-center h-full"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
 
     return (
-
         <>
             <header className="flex items-center bg-surface-light dark:bg-surface-dark px-4 py-4 justify-between border-b border-gray-200 dark:border-gray-800 shrink-0 z-20">
                 <button onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#111418] dark:text-white"><span className="material-symbols-outlined text-2xl">arrow_back</span></button>
                 <div className="flex-1 flex justify-center gap-2">
-                    <div className={`h-2 w-8 rounded-full transition-colors ${step >= 1 ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-                    <div className={`h-2 w-8 rounded-full transition-colors ${step >= 2 ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-                    <div className={`h-2 w-8 rounded-full transition-colors ${step >= 3 ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-                    <div className={`h-2 w-8 rounded-full transition-colors ${step >= 4 ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                    {[1, 2, 3, 4, 5].map(s => (
+                        <div key={s} className={`h-2 w-8 rounded-full transition-colors ${step >= s ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                    ))}
                 </div>
                 <div className="size-10"></div>
             </header>
-            
+
             <main className="flex-1 overflow-y-auto pb-40 no-scrollbar bg-background-light dark:bg-background-dark p-4">
                 {step === 1 && (
                     <div className="space-y-4 animate-in slide-in-from-right duration-300">
@@ -346,22 +373,59 @@ export const NewOrderScreen: React.FC = () => {
                                 </div>
                             </div>
                         )}
-
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
-                            <div className="flex justify-between items-center mb-4">
-                                <span className="text-gray-500">Total Estimado</span>
-                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <button onClick={() => setStep(4)} disabled={calculateTotal() === 0 || (selectedService.type === 'kg' && !kgCategory)} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
-                                Continuar
-                            </button>
-                        </div>
                     </div>
                 )}
 
                 {step === 4 && (
+                    <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                        <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Detalhes do Pedido</h2>
+                        
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[#111418] dark:text-white text-base font-bold mb-2">Data do Pedido</label>
+                                <input 
+                                    type="date" 
+                                    value={orderDate} 
+                                    onChange={e => setOrderDate(e.target.value)} 
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 focus:ring-primary focus:border-primary text-gray-900 dark:text-white" 
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[#111418] dark:text-white text-base font-bold mb-2">Previsão de Entrega</label>
+                                <input 
+                                    type="date" 
+                                    value={deliveryDate} 
+                                    onChange={e => setDeliveryDate(e.target.value)} 
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 focus:ring-primary focus:border-primary text-gray-900 dark:text-white" 
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[#111418] dark:text-white text-base font-bold mb-2">Observações</label>
+                                <textarea value={details} onChange={e => setDetails(e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark p-4 h-32 resize-none focus:ring-primary focus:border-primary" placeholder="Instruções de lavagem, manchas específicas, etc..." />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {step === 5 && (
                     <div className="space-y-6 animate-in slide-in-from-right duration-300 pb-32">
-                        <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Serviços Extras</h2>
+                        <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Custos Adicionais</h2>
+                        {/* Taxa de Roupa Íntima */}
+                        <div onClick={() => setUnderwearTax(!underwearTax)} className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${underwearTax ? 'bg-primary/5 border-primary/30' : 'bg-surface-light dark:bg-surface-dark border-gray-100 dark:border-gray-800'}`}>
+                            <div className="flex items-center gap-3">
+                                <div className={`size-6 rounded-md border flex items-center justify-center ${underwearTax ? 'bg-primary border-primary text-white' : 'border-gray-300 dark:border-gray-600'}`}>
+                                    {underwearTax && <span className="material-symbols-outlined text-sm">check</span>}
+                                </div>
+                                <div>
+                                    <span className="block font-bold text-[#111418] dark:text-white">Taxa Roupa Íntima</span>
+                                    <span className="text-xs text-gray-500">Adicional para peças íntimas</span>
+                                </div>
+                            </div>
+                            <span className="font-bold text-primary">+ R$ 20,00</span>
+                        </div>
+
                         <div className="grid gap-3">
                             {extras.map(extra => {
                                 const isSelected = selectedExtras.some(e => e.id === extra.id);
@@ -380,54 +444,61 @@ export const NewOrderScreen: React.FC = () => {
                             {extras.length === 0 && <p className="text-gray-500 text-center">Nenhum serviço extra disponível.</p>}
                         </div>
 
-                        {/* Desconto como checkbox com valor editável */}
-                        <div className="grid gap-3">
-                            <div className={`flex items-center justify-between p-4 rounded-xl border ${parseFloat(discount) > 0 ? 'bg-danger/5 border-danger/30' : 'bg-surface-light dark:bg-surface-dark border-gray-100 dark:border-gray-800'}`}>
-                                <div className="flex items-center gap-3 flex-1">
-                                    <div 
-                                        onClick={() => setDiscount(parseFloat(discount) > 0 ? '0' : '10')}
-                                        className={`size-6 rounded-md border flex items-center justify-center cursor-pointer ${parseFloat(discount) > 0 ? 'bg-danger border-danger text-white' : 'border-gray-300 dark:border-gray-600'}`}
-                                    >
-                                        {parseFloat(discount) > 0 && <span className="material-symbols-outlined text-sm">check</span>}
-                                    </div>
-                                    <span className="font-bold text-[#111418] dark:text-white">Desconto</span>
-                                </div>
-                                {parseFloat(discount) > 0 && (
-                                    <input 
-                                        type="number" 
-                                        value={discount} 
-                                        onChange={e => setDiscount(e.target.value)}
-                                        onClick={e => e.stopPropagation()}
-                                        className="w-28 rounded-lg border border-danger/30 bg-white dark:bg-surface-dark px-3 py-1 text-right font-bold text-danger focus:ring-danger focus:border-danger" 
-                                        placeholder="0,00"
-                                        step="0.01"
-                                        min="0"
-                                    />
-                                )}
-                                {parseFloat(discount) === 0 && (
-                                    <span className="font-bold text-danger">- R$ 0,00</span>
-                                )}
+                        {/* Desconto Manual */}
+                        <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-surface-light dark:bg-surface-dark">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="font-bold text-[#111418] dark:text-white">Desconto</span>
+                                <span className="font-bold text-danger">- R$ {parseFloat(discount || '0').toFixed(2)}</span>
                             </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-[#111418] dark:text-white text-base font-bold mb-2">Observações</label>
-                            <textarea value={details} onChange={e => setDetails(e.target.value)} className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark p-4 h-24 resize-none focus:ring-primary focus:border-primary" placeholder="Detalhes adicionais..." />
-                        </div>
-
-                        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
-                            <div className="flex justify-between items-center mb-4">
-                                <span className="text-gray-500">Total Final</span>
-                                <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <div className="mt-2">
+                                <label className="text-xs text-gray-500 mb-1 block">Valor do desconto (R$)</label>
+                                <input 
+                                    type="number" 
+                                    value={discount} 
+                                    onChange={e => setDiscount(e.target.value)} 
+                                    className="w-full text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-3 focus:ring-primary focus:border-primary text-gray-900 dark:text-white"
+                                    placeholder="0.00"
+                                    step="0.01"
+                                    min="0"
+                                />
                             </div>
-                            <button onClick={handleSubmit} disabled={submitting} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
-                                {submitting ? 'Salvando...' : 'Finalizar Pedido'}
-                            </button>
                         </div>
                     </div>
                 )}
-
             </main>
+
+            {/* Footers */}
+            {step === 3 && selectedService && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-gray-500">Total Estimado</span>
+                        <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <button onClick={() => setStep(4)} disabled={calculateTotal() === 0 || (selectedService.type === 'kg' && !kgCategory)} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
+                        Continuar
+                    </button>
+                </div>
+            )}
+
+            {step === 4 && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
+                    <button onClick={() => setStep(5)} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors">
+                        Continuar
+                    </button>
+                </div>
+            )}
+
+            {step === 5 && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-gray-500">Total Final</span>
+                        <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                    <button onClick={handleSubmit} disabled={submitting} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
+                        {submitting ? 'Salvando...' : 'Finalizar Pedido'}
+                    </button>
+                </div>
+            )}
         </>
     );
 };
@@ -568,4 +639,3 @@ export const OrderDetailsScreen: React.FC = () => {
         </>
     );
 };
-// Force refresh
