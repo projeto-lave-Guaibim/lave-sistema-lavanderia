@@ -511,6 +511,8 @@ export const OrderDetailsScreen: React.FC = () => {
     const { user: currentUser } = useAuth();
     const [order, setOrder] = useState<Order | null>(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
     const [updating, setUpdating] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -531,6 +533,13 @@ export const OrderDetailsScreen: React.FC = () => {
 
     const handleUpdateStatus = async (newStatus: OrderStatus) => {
         if (!order) return;
+        
+        if (newStatus === OrderStatus.Entregue) {
+            setShowStatusModal(false);
+            setShowPaymentModal(true);
+            return;
+        }
+
         setUpdating(true);
         try {
             await orderService.updateStatus(order.id, newStatus);
@@ -539,6 +548,21 @@ export const OrderDetailsScreen: React.FC = () => {
         } catch (error) {
             console.error("Failed to update status", error);
             alert("Erro ao atualizar status.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleDeliverOrder = async () => {
+        if (!order || !selectedPaymentMethod) return;
+        setUpdating(true);
+        try {
+            await orderService.updateStatus(order.id, OrderStatus.Entregue, selectedPaymentMethod);
+            setOrder({ ...order, status: OrderStatus.Entregue, payment_method: selectedPaymentMethod });
+            setShowPaymentModal(false);
+        } catch (error) {
+            console.error("Failed to update status", error);
+            alert("Erro ao finalizar pedido.");
         } finally {
             setUpdating(false);
         }
@@ -606,7 +630,14 @@ export const OrderDetailsScreen: React.FC = () => {
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Serviço</span><span className="font-medium text-[#111418] dark:text-white">{order.service}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-gray-500">Detalhes</span><span className="font-medium text-[#111418] dark:text-white text-right max-w-[60%]">{order.details}</span></div>
+                            {order.payment_method && (
+                                <div className="flex justify-between text-sm"><span className="text-gray-500">Pagamento</span><span className="font-medium text-[#111418] dark:text-white">{order.payment_method}</span></div>
+                            )}
+                            <div className="flex justify-between text-sm"><span className="text-gray-500">Detalhes</span><span className="font-medium text-[#111418] dark:text-white text-right max-w-[60%] flex flex-col items-end">
+                                {order.details.split('. ').map((part, index, arr) => (
+                                    <span key={index}>{part}{index < arr.length - 1 ? '.' : ''}</span>
+                                ))}
+                            </span></div>
                             <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800"><span className="font-bold text-[#111418] dark:text-white">Total</span><span className="font-bold text-primary text-lg">R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
                         </div>
                     </div>
@@ -633,6 +664,36 @@ export const OrderDetailsScreen: React.FC = () => {
                                 </button>
                             ))}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {showPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                    <div className="w-full bg-white dark:bg-[#1a222d] rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom duration-300">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold text-[#111418] dark:text-white">Confirmar Pagamento</h3>
+                            <button onClick={() => setShowPaymentModal(false)} className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full"><span className="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div className="flex flex-col gap-2 mb-4">
+                            {['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro'].map(method => (
+                                <button 
+                                    key={method}
+                                    onClick={() => setSelectedPaymentMethod(method)}
+                                    className={`h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 ${selectedPaymentMethod === method ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-[#111418] dark:text-white'}`}
+                                >
+                                    {method}
+                                    {selectedPaymentMethod === method && <span className="material-symbols-outlined">check</span>}
+                                </button>
+                            ))}
+                        </div>
+                        <button 
+                            onClick={handleDeliverOrder}
+                            disabled={!selectedPaymentMethod || updating}
+                            className="w-full h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50 hover:bg-primary-dark transition-colors"
+                        >
+                            {updating ? 'Salvando...' : 'Confirmar Entrega'}
+                        </button>
                     </div>
                 </div>
             )}

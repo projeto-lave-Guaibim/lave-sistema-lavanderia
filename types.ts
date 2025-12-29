@@ -27,6 +27,7 @@ export interface Order {
   client: Client;
   service: string;
   details: string;
+  payment_method?: string;
   timestamp: string;
   status: OrderStatus;
   value?: number;

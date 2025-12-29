@@ -14,6 +14,7 @@ export const orderService = {
             id: o.id,
             service: o.service_type, 
             details: o.description, 
+            payment_method: o.payment_method,
             timestamp: new Date(o.created_at).toLocaleString('pt-BR'), 
             status: o.status,
             value: Number(o.value),
@@ -79,10 +80,15 @@ export const orderService = {
         if (error) throw new Error(error.message);
     },
 
-    updateStatus: async (id: number, status: string) => {
+    updateStatus: async (id: number, status: string, paymentMethod?: string) => {
+        const updates: any = { status };
+        if (paymentMethod) {
+            updates.payment_method = paymentMethod;
+        }
+
         const { error } = await supabase
             .from('orders')
-            .update({ status })
+            .update(updates)
             .eq('id', id);
 
         if (error) throw new Error(error.message);
