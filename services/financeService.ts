@@ -13,9 +13,10 @@ export const financeService = {
         return data.map((t: any) => ({
             ...t,
             amount: Number(t.amount),
-            date: new Date(t.date).toLocaleDateString('pt-BR'), // Format date
-            // paid is boolean in DB, so no conversion needed if schema matches
-            paid: t.paid
+            date: new Date(t.date).toLocaleDateString('pt-BR'), 
+            paid: t.paid,
+            clientName: t.client_name,
+            icon: t.icon
         }));
     },
 
@@ -26,9 +27,11 @@ export const financeService = {
                 description: transaction.description,
                 amount: transaction.amount,
                 type: transaction.type,
-                // category: transaction.category, // Add category if needed in UI/Types
-                date: new Date().toISOString().split('T')[0], // Default to today
-                paid: transaction.paid
+                category: ((transaction as any).category) || null,
+                date: transaction.date,
+                paid: transaction.paid,
+                client_name: transaction.clientName,
+                icon: transaction.icon
             }])
             .select()
             .single();
@@ -37,7 +40,7 @@ export const financeService = {
         return data;
     },
 
-    delete: async (id: number) => {
+    delete: async (id: string) => {
         const { error } = await supabase
             .from('finance')
             .delete()

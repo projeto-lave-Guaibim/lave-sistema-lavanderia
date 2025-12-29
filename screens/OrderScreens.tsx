@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { Order, OrderStatus, Client } from '../types';
 import Header from '../components/Header';
+import { ClientModal } from './ClientScreens';
 import { openWhatsApp } from '../utils/whatsappUtils';
 import { orderService } from '../services/orderService';
 import { clientService } from '../services/clientService';
@@ -134,6 +135,8 @@ export const NewOrderScreen: React.FC = () => {
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [deliveryDate, setDeliveryDate] = useState('');
     const [underwearTax, setUnderwearTax] = useState(false);
+    const [showNewClientModal, setShowNewClientModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -144,7 +147,7 @@ export const NewOrderScreen: React.FC = () => {
                     catalogService.getItems(),
                     catalogService.getExtras()
                 ]);
-                setClients(clientsData);
+                setClients(clientsData.sort((a, b) => a.name.localeCompare(b.name)));
                 setServices(servicesData);
                 setItems(itemsData);
                 setExtras(extrasData);
@@ -275,15 +278,36 @@ export const NewOrderScreen: React.FC = () => {
             <main className="flex-1 overflow-y-auto pb-40 no-scrollbar bg-background-light dark:bg-background-dark p-4">
                 {step === 1 && (
                     <div className="space-y-4 animate-in slide-in-from-right duration-300">
-                        <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Quem é o cliente?</h2>
-                        <input type="text" placeholder="Buscar cliente..." className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 mb-4 focus:ring-primary focus:border-primary" />
-                        {clients.map(client => (
-                            <div key={client.id} onClick={() => { setSelectedClient(client); setStep(2); }} className="flex items-center gap-3 p-3 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:scale-[0.99]">
-                                <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12" style={{ backgroundImage: `url("${client.avatarUrl}")` }}></div>
-                                <div><p className="font-bold text-[#111418] dark:text-white text-lg">{client.name}</p><p className="text-sm text-gray-500">{client.phone}</p></div>
-                                <span className="material-symbols-outlined ml-auto text-gray-400">chevron_right</span>
-                            </div>
-                        ))}
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-[#111418] dark:text-white">Quem é o cliente?</h2>
+                            <button onClick={() => setShowNewClientModal(true)} className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg font-bold hover:bg-primary hover:text-white transition-colors">
+                                <span className="material-symbols-outlined text-lg">add</span>
+                                <span className="text-sm">Novo Cliente</span>
+                            </button>
+                        </div>
+
+                        <input 
+                            type="text" 
+                            placeholder="Buscar cliente..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 mb-4 focus:ring-primary focus:border-primary" 
+                        />
+                        
+                        <div className="space-y-3">
+                            {clients
+                                .filter(client => 
+                                    client.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                    (client.phone && client.phone.includes(searchTerm))
+                                )
+                                .map(client => (
+                                <div key={client.id} onClick={() => { setSelectedClient(client); setStep(2); }} className="flex items-center gap-3 p-3 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:scale-[0.99]">
+                                    <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12" style={{ backgroundImage: `url("${client.avatarUrl}")` }}></div>
+                                    <div><p className="font-bold text-[#111418] dark:text-white text-lg">{client.name}</p><p className="text-sm text-gray-500">{client.phone}</p></div>
+                                    <span className="material-symbols-outlined ml-auto text-gray-400">chevron_right</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 )}
 
@@ -499,6 +523,19 @@ export const NewOrderScreen: React.FC = () => {
                     </button>
                 </div>
             )}
+            {showNewClientModal && (
+                <ClientModal 
+                    onClose={() => setShowNewClientModal(false)}
+                    onSuccess={() => {
+                        setShowNewClientModal(false);
+                        const fetchData = async () => {
+                            const clientsData = await clientService.getAll();
+                            setClients(clientsData.sort((a, b) => a.name.localeCompare(b.name)));
+                        };
+                        fetchData();
+                    }}
+                />
+            )}
         </>
     );
 };
@@ -514,6 +551,11 @@ export const OrderDetailsScreen: React.FC = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
     const [updating, setUpdating] = useState(false);
+
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editValue, setEditValue] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -568,6 +610,33 @@ export const OrderDetailsScreen: React.FC = () => {
         }
     };
 
+    const handleOpenEdit = () => {
+        if (!order) return;
+        setEditValue(order.value.toString());
+        setEditDescription(order.details);
+        setShowEditModal(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!order) return;
+        setUpdating(true);
+        try {
+            const updatedOrder = {
+                ...order,
+                value: parseFloat(editValue.replace(',', '.')) || 0,
+                details: editDescription
+            };
+            await orderService.update(updatedOrder);
+            setOrder(updatedOrder);
+            setShowEditModal(false);
+        } catch (error) {
+            console.error("Failed to update order", error);
+            alert("Erro ao editar pedido.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
     if (loading) return <div className="flex justify-center items-center h-full"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
     if (!order) return <div className="flex justify-center items-center h-full">Pedido não encontrado</div>;
 
@@ -575,7 +644,16 @@ export const OrderDetailsScreen: React.FC = () => {
         <>
             <header className="flex items-center bg-surface-light dark:bg-surface-dark px-4 py-3 border-b border-gray-100 dark:border-gray-800 shrink-0 z-10">
                 <button onClick={() => navigate(-1)} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[#111418] dark:text-white">arrow_back</span></button>
-                <h1 className="text-[#111418] dark:text-white text-lg font-bold leading-tight flex-1 text-center pr-10">Pedido #{order.id}</h1>
+                <div className="flex-1 text-center">
+                    <h1 className="text-[#111418] dark:text-white text-lg font-bold leading-tight">Pedido #{order.id}</h1>
+                </div>
+                {currentUser?.role === 'admin' ? (
+                    <button onClick={handleOpenEdit} className="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-primary" title="Editar Pedido">
+                        <span className="material-symbols-outlined text-2xl">edit</span>
+                    </button>
+                ) : (
+                    <div className="size-10"></div>
+                )}
             </header>
             <main className="flex-1 overflow-y-auto no-scrollbar p-4 pb-24">
                 <div className="flex flex-col gap-4">
@@ -668,6 +746,44 @@ export const OrderDetailsScreen: React.FC = () => {
                 </div>
             )}
 
+            {showEditModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-[#1a222d] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-[#111418] dark:text-white">Editar Pedido</h3>
+                            <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><span className="material-symbols-outlined">close</span></button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                             <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Total (R$)</label>
+                                <input 
+                                    type="text" 
+                                    value={editValue} 
+                                    onChange={(e) => setEditValue(e.target.value)}
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 focus:ring-primary focus:border-primary outline-none transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição / Detalhes</label>
+                                <textarea 
+                                    value={editDescription} 
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    rows={5}
+                                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 py-3 focus:ring-primary focus:border-primary resize-none outline-none transition-all"
+                                />
+                            </div>
+                            <button 
+                                onClick={handleSaveEdit} 
+                                disabled={updating}
+                                className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 hover:bg-primary-dark transition-colors disabled:opacity-50"
+                            >
+                                {updating ? 'Salvando...' : 'Salvar Alterações'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             {showPaymentModal && (
                 <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
                     <div className="w-full bg-white dark:bg-[#1a222d] rounded-2xl p-4 shadow-2xl animate-in slide-in-from-bottom duration-300">

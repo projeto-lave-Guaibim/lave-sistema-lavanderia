@@ -89,7 +89,7 @@ const InvoiceScreen: React.FC = () => {
                     <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                             <span className="material-symbols-outlined text-lg text-primary">business</span>
-                            <span><strong>CNPJ:</strong> 63.374.913/0009-8</span>
+                            <span><strong>CNPJ:</strong> 63.374.913/0001-98</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                             <span className="material-symbols-outlined text-lg text-primary">location_on</span>

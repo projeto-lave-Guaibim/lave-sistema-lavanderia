@@ -17,7 +17,7 @@ export const CashFlowScreen: React.FC = () => {
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const { user: currentUser } = useAuth();
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         if (!confirm('Tem certeza que deseja excluir este registro?')) return;
         try {
             await financeService.delete(id);
@@ -80,7 +80,7 @@ export const CashFlowScreen: React.FC = () => {
             const datePart = order.timestamp.split(',')[0].trim(); 
             
             return {
-                id: 100000 + order.id, // Offset ID to avoid collision with manual txs
+                id: `order-${order.id}`, // Use string ID to match Transaction interface
                 type: TransactionType.Receita,
                 description: `Pedido #${order.id} - ${order.service}`,
                 clientName: order.client.name,
@@ -116,7 +116,7 @@ export const CashFlowScreen: React.FC = () => {
             return tx.type === TransactionType.Despesa;
         });
         
-        return showAll ? typeFiltered : typeFiltered.slice(0, 5);
+        return showAll ? typeFiltered : typeFiltered.slice(0, 3);
     }, [monthlyTransactions, activeTab, showAll]);
 
     // Calculate totals
@@ -265,16 +265,17 @@ export const AddTransactionScreen: React.FC = () => {
             await financeService.create({
                 type: formData.type === 'receita' ? TransactionType.Receita : TransactionType.Despesa,
                 description: formData.description,
-                amount: parseFloat(formData.amount),
+                amount: parseFloat(formData.amount.replace(',', '.')),
                 date: formData.date,
                 clientName: 'Avulso', // Default for now
                 paid: true,
                 icon: formData.type === 'receita' ? 'attach_money' : 'money_off'
             });
             navigate('/finance');
-        } catch (error) {
+
+        } catch (error: any) {
             console.error("Failed to create transaction", error);
-            alert("Erro ao salvar transação.");
+            alert(`Erro ao salvar transação: ${error.message || JSON.stringify(error)}`);
         } finally {
             setSubmitting(false);
         }

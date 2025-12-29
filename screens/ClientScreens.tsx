@@ -138,7 +138,7 @@ export const ClientsListScreen: React.FC = () => {
     );
 };
 
-const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuccess: () => void }> = ({ client, onClose, onSuccess }) => {
+export const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuccess: () => void }> = ({ client, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         name: client?.name || '',
         phone: client?.phone || '',
