@@ -131,12 +131,15 @@ export const NewOrderScreen: React.FC = () => {
     const [details, setDetails] = useState('');
     const [discount, setDiscount] = useState('0');
 
+    const [showStatusModal, setShowStatusModal] = useState(false);
     const [kgCategory, setKgCategory] = useState<string>('');
+    const [showIndividualItems, setShowIndividualItems] = useState(false);
     const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [deliveryDate, setDeliveryDate] = useState('');
     const [underwearTax, setUnderwearTax] = useState(false);
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [touristName, setTouristName] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -188,6 +191,8 @@ export const NewOrderScreen: React.FC = () => {
         if (selectedService) {
             if (selectedService.type === 'kg') {
                 total += (parseFloat(weight) || 0) * selectedService.price;
+                // Add items cost if any selected in mixed mode
+                total += selectedItems.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
             } else {
                 total += selectedItems.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
             }
@@ -211,9 +216,18 @@ export const NewOrderScreen: React.FC = () => {
         setSubmitting(true);
         try {
             const totalValue = calculateTotal();
-            const itemsDescription = selectedService.type === 'item' 
-                ? selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ')
-                : `${weight}kg${kgCategory ? ` (${kgCategory})` : ''}`;
+
+            
+            let itemsDescription = '';
+            if (selectedService.type === 'kg') {
+                itemsDescription = `${weight}kg${kgCategory ? ` (${kgCategory})` : ''}`;
+                if (selectedItems.length > 0) {
+                     const partsDesc = selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ');
+                     itemsDescription += `. Peças: ${partsDesc}`;
+                }
+            } else {
+                itemsDescription = selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ');
+            }
 
             const extrasDescription = selectedExtras.length > 0 
                 ? `Extras: ${selectedExtras.map(e => e.name).join(', ')}` 
@@ -239,9 +253,12 @@ export const NewOrderScreen: React.FC = () => {
                 details
             ].filter(Boolean).join('. ');
 
+            const isTourist = selectedClient.name.toLowerCase().includes('turista');
+            const finalClientName = (isTourist && touristName) ? `Turista - ${touristName}` : selectedClient.name;
+
             const newOrder: Order = {
                 id: 0,
-                client: selectedClient,
+                client: { ...selectedClient, name: finalClientName },
                 service: selectedService.name,
                 details: finalDetails,
                 value: totalValue,
@@ -301,13 +318,46 @@ export const NewOrderScreen: React.FC = () => {
                                     (client.phone && client.phone.includes(searchTerm))
                                 )
                                 .map(client => (
-                                <div key={client.id} onClick={() => { setSelectedClient(client); setStep(2); }} className="flex items-center gap-3 p-3 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:scale-[0.99]">
+                                <div key={client.id} onClick={() => { 
+                                    setSelectedClient(client); 
+                                    if (client.name.toLowerCase().includes('turista')) {
+                                        setStep(11); // Step 1.1 for Tourist
+                                    } else {
+                                        setStep(2); 
+                                    }
+                                }} className="flex items-center gap-3 p-3 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors active:scale-[0.99]">
                                     <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12" style={{ backgroundImage: `url("${client.avatarUrl}")` }}></div>
                                     <div><p className="font-bold text-[#111418] dark:text-white text-lg">{client.name}</p><p className="text-sm text-gray-500">{client.phone}</p></div>
                                     <span className="material-symbols-outlined ml-auto text-gray-400">chevron_right</span>
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+                
+                {step === 11 && (
+                    <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-bold text-[#111418] dark:text-white">Identificação do Turista</h2>
+                        </div>
+                        <div className="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-100 dark:border-gray-800 text-center space-y-4">
+                            <p className="text-gray-500">Para facilitar a identificação, informe o nome ou local do turista.</p>
+                            <input 
+                                type="text" 
+                                value={touristName}
+                                onChange={e => setTouristName(e.target.value)}
+                                placeholder="Ex: João - Quarto 102"
+                                className="w-full text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-4 focus:ring-primary focus:border-primary text-gray-900 dark:text-white"
+                                autoFocus
+                            />
+                        </div>
+                        <button 
+                            disabled={!touristName.trim()}
+                            onClick={() => setStep(2)} 
+                            className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors mt-8"
+                        >
+                            Continuar
+                        </button>
                     </div>
                 )}
 
@@ -373,7 +423,42 @@ export const NewOrderScreen: React.FC = () => {
                                         <span className="text-2xl font-bold text-gray-400 mt-4">kg</span>
                                     </div>
                                 </div>
+                            
+                            {/* Option to add individual items (Mixed Mode) */}
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-6">
+                                <button 
+                                    onClick={() => setShowIndividualItems(!showIndividualItems)}
+                                    className="w-full flex items-center justify-between p-4 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                >
+                                    <span className="font-bold flex items-center gap-2"><span className="material-symbols-outlined">add_circle</span> Adicionar Peças Avulsas</span>
+                                    <span className={`material-symbols-outlined transform transition-transform ${showIndividualItems ? 'rotate-180' : ''}`}>expand_more</span>
+                                </button>
+                                
+                                {showIndividualItems && (
+                                    <div className="mt-4 animate-in slide-in-from-top duration-300">
+                                        <h3 className="text-[#111418] dark:text-white text-lg font-bold mb-3 text-left">Selecionar Peças</h3>
+                                        <div className="grid gap-2 text-left">
+                                            {items.map(item => {
+                                                const qty = selectedItems.find(i => i.item.id === item.id)?.quantity || 0;
+                                                return (
+                                                    <div key={item.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${qty > 0 ? 'bg-primary/5 border-primary/30' : 'bg-surface-light dark:bg-surface-dark border-gray-100 dark:border-gray-800'}`}>
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`size-10 rounded-lg flex items-center justify-center ${qty > 0 ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'}`}><span className="material-symbols-outlined">{item.icon || 'checkroom'}</span></div>
+                                                            <div><p className="font-bold text-sm text-[#111418] dark:text-white">{item.name}</p><p className="text-xs text-gray-500">R$ {item.price.toFixed(2)}</p></div>
+                                                        </div>
+                                                        <div className="flex items-center gap-3">
+                                                            {qty > 0 && <button onClick={() => handleAddItem(item, -1)} className="size-8 rounded-full bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300"><span className="material-symbols-outlined text-sm">remove</span></button>}
+                                                            {qty > 0 && <span className="font-bold w-4 text-center text-[#111418] dark:text-white">{qty}</span>}
+                                                            <button onClick={() => handleAddItem(item, 1)} className={`size-8 rounded-full flex items-center justify-center shadow-sm transition-colors ${qty > 0 ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'}`}><span className="material-symbols-outlined text-sm">add</span></button>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                        </div>
                         ) : (
                             <div>
                                 <h3 className="text-[#111418] dark:text-white text-lg font-bold mb-3">Selecionar Peças</h3>

@@ -253,12 +253,10 @@ export const generateOrderPDF = async (order: Order) => {
     const summaryY = finalY + 10;
     
     // ... calculations ...
-    let subtotal = order.value || 0;
-    if (order.extras && order.extras.length > 0) {
-        subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
-    }
+    // ... calculations ...
+    const total = order.value || 0;
     const discount = order.discount || 0;
-    const total = Math.max(0, subtotal - discount);
+    const subtotal = total + discount;
     
     // ... drawing ...
     doc.setDrawColor(220, 220, 220);

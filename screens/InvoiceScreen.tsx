@@ -240,13 +240,7 @@ const InvoiceScreen: React.FC = () => {
                     <div className="w-full max-w-sm bg-gradient-to-br from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-800/30 rounded-xl p-6 border border-gray-200 dark:border-gray-700 space-y-3">
                         <div className="flex justify-between text-gray-600 dark:text-gray-300">
                             <span>Subtotal</span>
-                            <span>R$ {(() => {
-                                let subtotal = order.value || 0;
-                                if (order.extras && order.extras.length > 0) {
-                                    subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
-                                }
-                                return subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                            })()}</span>
+                            <span>R$ {((order.value || 0) + (order.discount || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between text-gray-600 dark:text-gray-300">
                             <span>Descontos</span>
@@ -255,14 +249,7 @@ const InvoiceScreen: React.FC = () => {
                         <div className="border-t-2 border-gray-300 dark:border-gray-600"></div>
                         <div className="flex justify-between text-xl font-bold">
                             <span className="text-gray-900 dark:text-white">Total a Pagar</span>
-                            <span className="text-primary">R$ {(() => {
-                                let subtotal = order.value || 0;
-                                if (order.extras && order.extras.length > 0) {
-                                    subtotal += order.extras.reduce((acc, extra) => acc + extra.price, 0);
-                                }
-                                const total = Math.max(0, subtotal - (order.discount || 0));
-                                return total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                            })()}</span>
+                            <span className="text-primary">R$ {(order.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </section>
