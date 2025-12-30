@@ -140,6 +140,7 @@ export const NewOrderScreen: React.FC = () => {
     const [showNewClientModal, setShowNewClientModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [touristName, setTouristName] = useState('');
+    const [touristContact, setTouristContact] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -254,7 +255,9 @@ export const NewOrderScreen: React.FC = () => {
             ].filter(Boolean).join('. ');
 
             const isTourist = selectedClient.name.toLowerCase().includes('turista');
-            const finalClientName = (isTourist && touristName) ? `Turista - ${touristName}` : selectedClient.name;
+            const finalClientName = (isTourist && touristName) 
+                ? `Turista - ${touristName}${touristContact ? ` - ${touristContact}` : ''}` 
+                : selectedClient.name;
 
             const newOrder: Order = {
                 id: 0,
@@ -283,7 +286,11 @@ export const NewOrderScreen: React.FC = () => {
     return (
         <>
             <header className="flex items-center bg-surface-light dark:bg-surface-dark px-4 py-4 justify-between border-b border-gray-200 dark:border-gray-800 shrink-0 z-20">
-                <button onClick={() => step > 1 ? setStep(step - 1) : navigate(-1)} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#111418] dark:text-white"><span className="material-symbols-outlined text-2xl">arrow_back</span></button>
+                <button onClick={() => {
+                    if (step === 11) setStep(1);
+                    else if (step > 1) setStep(step - 1);
+                    else navigate(-1);
+                }} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#111418] dark:text-white"><span className="material-symbols-outlined text-2xl">arrow_back</span></button>
                 <div className="flex-1 flex justify-center gap-2">
                     {[1, 2, 3, 4, 5].map(s => (
                         <div key={s} className={`h-2 w-8 rounded-full transition-colors ${step >= s ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
@@ -349,6 +356,13 @@ export const NewOrderScreen: React.FC = () => {
                                 placeholder="Ex: João - Quarto 102"
                                 className="w-full text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-4 focus:ring-primary focus:border-primary text-gray-900 dark:text-white"
                                 autoFocus
+                            />
+                            <input 
+                                type="text" 
+                                value={touristContact}
+                                onChange={e => setTouristContact(e.target.value)}
+                                placeholder="Contato / WhatsApp (Opcional)"
+                                className="w-full text-center text-xl font-bold rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 py-4 focus:ring-primary focus:border-primary text-gray-900 dark:text-white"
                             />
                         </div>
                         <button 
