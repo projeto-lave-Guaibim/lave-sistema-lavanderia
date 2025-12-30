@@ -33,7 +33,9 @@ export interface Order {
   value?: number;
   extras?: Extra[];
   discount?: number;
+  isPaid?: boolean;
 }
+
 
 export interface StockItem {
   id: string;

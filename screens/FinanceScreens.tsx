@@ -5,6 +5,8 @@ import Header from '../components/Header';
 import { financeService } from '../services/financeService';
 import { orderService } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
+import { feeUtils } from '../utils/feeUtils';
+import { FeeConfigModal } from '../components/FeeConfigModal';
 
 export const CashFlowScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'Receitas' | 'Despesas'>('Receitas');
@@ -13,6 +15,8 @@ export const CashFlowScreen: React.FC = () => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showFeeModal, setShowFeeModal] = useState(false);
+    const [currentFees, setCurrentFees] = useState(feeUtils.getFees());
     const navigate = useNavigate();
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     const { user: currentUser } = useAuth();
@@ -79,19 +83,25 @@ export const CashFlowScreen: React.FC = () => {
             // Extract date part from "DD/MM/YYYY, HH:mm:ss" -> "DD/MM/YYYY"
             const datePart = order.timestamp.split(',')[0].trim(); 
             
+            // Apply fees if payment method exists
+            const rawAmount = order.value || 0;
+            const netAmount = order.payment_method 
+                ? feeUtils.calculateNetValue(rawAmount, order.payment_method, currentFees)
+                : rawAmount;
+
             return {
                 id: `order-${order.id}`, // Use string ID to match Transaction interface
                 type: TransactionType.Receita,
                 description: `Pedido #${order.id} - ${order.service}`,
                 clientName: order.client.name,
                 date: datePart,
-                amount: order.value || 0,
+                amount: netAmount,
                 paid: order.status === OrderStatus.Entregue,
                 icon: 'local_laundry_service'
             };
         });
         return [...transactions, ...orderTransactions];
-    }, [transactions, orders]);
+    }, [transactions, orders, currentFees]);
 
     // Filter transactions by month and year
     const monthlyTransactions = useMemo(() => {
@@ -146,6 +156,15 @@ export const CashFlowScreen: React.FC = () => {
             <Header 
                 title="Fluxo de Caixa" 
                 onMenuClick={toggleSidebar}
+                rightActions={
+                    <button 
+                        onClick={() => setShowFeeModal(true)}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-600 dark:text-gray-300"
+                        title="Configurar Taxas"
+                    >
+                        <span className="material-symbols-outlined">percent</span>
+                    </button>
+                }
             />
             <main className="flex-1 overflow-y-auto no-scrollbar pb-24">
                 <div className="bg-white dark:bg-[#1a222d] px-4 py-3 sticky top-0 z-10 shadow-sm">
@@ -214,6 +233,16 @@ export const CashFlowScreen: React.FC = () => {
                 </div>
             </main>
             <button onClick={() => navigate('/finance/new')} className="fixed bottom-[90px] right-4 bg-primary hover:bg-primary-dark text-white rounded-full size-14 shadow-lg shadow-blue-500/40 flex items-center justify-center transition-all transform hover:scale-105 z-20"><span className="material-symbols-outlined">add</span></button>
+            
+            {showFeeModal && (
+                <FeeConfigModal
+                    onClose={() => setShowFeeModal(false)}
+                    onSave={() => {
+                        setCurrentFees(feeUtils.getFees());
+                        // Trigger re-render of transactions via currentFees dependency
+                    }}
+                />
+            )}
         </>
     );
 };

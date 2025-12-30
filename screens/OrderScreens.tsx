@@ -91,7 +91,14 @@ export const OrdersListScreen: React.FC = () => {
                                     <div className="flex items-center gap-3">
                                         <div className={`w-1.5 h-10 rounded-full ${getStatusColor(order.status).split(' ')[0]}`}></div>
                                         <div>
-                                            <p className="text-[#111418] dark:text-white text-sm font-bold leading-tight">#{order.id.toString().padStart(4, '0')} • {order.client.name}</p>
+                                            <p className="text-[#111418] dark:text-white text-sm font-bold leading-tight flex items-center gap-2">
+                                                #{order.id.toString().padStart(4, '0')} • {order.client.name}
+                                                {order.isPaid && (
+                                                    <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-[10px] px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                                                        <span className="material-symbols-outlined text-[10px]">attach_money</span> PAGO
+                                                    </span>
+                                                )}
+                                            </p>
                                             <p className="text-[#637288] dark:text-gray-400 text-xs font-medium">{order.service} • R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
@@ -654,6 +661,7 @@ export const OrderDetailsScreen: React.FC = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editValue, setEditValue] = useState('');
     const [editDescription, setEditDescription] = useState('');
+    const [isDelivering, setIsDelivering] = useState(false);
 
     const [loading, setLoading] = useState(true);
 
@@ -677,6 +685,7 @@ export const OrderDetailsScreen: React.FC = () => {
         
         if (newStatus === OrderStatus.Entregue) {
             setShowStatusModal(false);
+            setIsDelivering(true);
             setShowPaymentModal(true);
             return;
         }
@@ -694,18 +703,62 @@ export const OrderDetailsScreen: React.FC = () => {
         }
     };
 
-    const handleDeliverOrder = async () => {
-        if (!order || !selectedPaymentMethod) return;
+    const handlePaymentSubmit = async (method: string) => {
+        if (!order) return;
         setUpdating(true);
         try {
-            await orderService.updateStatus(order.id, OrderStatus.Entregue, selectedPaymentMethod);
-            setOrder({ ...order, status: OrderStatus.Entregue, payment_method: selectedPaymentMethod });
+            // Update only payment method. Logic: If payment method is present, it's paid.
+            await orderService.updateStatus(order.id, order.status, method); 
+            
+            setOrder({ ...order, isPaid: true, payment_method: method });
+            setShowPaymentModal(false);
+        } catch (error) {
+            console.error("Failed to update payment", error);
+            alert("Erro ao confirmar pagamento.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleDeliverOrder = async (methodOverride?: string) => {
+        // If order is already paid AND we are delivering
+        if (order?.isPaid && isDelivering) {
+            setUpdating(true);
+            try {
+                await orderService.updateStatus(order.id, OrderStatus.Entregue);
+                setOrder({ ...order, status: OrderStatus.Entregue });
+                setShowStatusModal(false);
+            } catch (error) {
+                 console.error("Failed to update status", error);
+            } finally {
+                setUpdating(false);
+                setIsDelivering(false);
+            }
+            return;
+        }
+
+        const methodToUse = typeof methodOverride === 'string' ? methodOverride : selectedPaymentMethod;
+        
+        if (!order || !methodToUse) return;
+        setUpdating(true);
+        try {
+            if (isDelivering) {
+                // Delivering + Paying
+                await orderService.updateStatus(order.id, OrderStatus.Entregue, methodToUse); 
+                setOrder({ ...order, status: OrderStatus.Entregue, payment_method: methodToUse, isPaid: true });
+            } else {
+                // Just Paying (Mark as Paid)
+                // We keep status as is, but we set payment method.
+                await orderService.updateStatus(order.id, order.status, methodToUse);
+                setOrder({ ...order, payment_method: methodToUse, isPaid: true });
+            }
             setShowPaymentModal(false);
         } catch (error) {
             console.error("Failed to update status", error);
-            alert("Erro ao finalizar pedido.");
+            alert("Erro ao salvar.");
         } finally {
             setUpdating(false);
+            setIsDelivering(false);
         }
     };
 
@@ -779,11 +832,11 @@ export const OrderDetailsScreen: React.FC = () => {
                                     <span className="material-symbols-outlined">sync</span>
                                 </button>
                                 <button 
-                                    onClick={() => openWhatsApp(order.client.phone, `Olá ${order.client.name}, seu pedido #${order.id} está ${order.status}. Total: R$ ${order.value.toFixed(2)}.`)}
-                                    className="flex items-center justify-center size-10 rounded-full bg-whatsapp/10 text-whatsapp hover:bg-whatsapp hover:text-white transition-colors"
-                                    title="Enviar WhatsApp"
+                                    onClick={() => setShowPaymentModal(true)}
+                                    className={`flex items-center justify-center size-10 rounded-full transition-colors ${order.isPaid ? 'bg-green-500/10 text-green-500 hover:bg-green-500 hover:text-white' : 'bg-gray-100 text-gray-500 hover:bg-primary hover:text-white'}`}
+                                    title={order.isPaid ? "Pagamento Confirmado" : "Confirmar Pagamento"}
                                 >
-                                    <svg fill="currentColor" height="20" viewBox="0 0 16 16" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"></path></svg>
+                                    <span className="material-symbols-outlined">attach_money</span>
                                 </button>
                                 {currentUser?.role === 'admin' && (
                                     <button 
@@ -804,12 +857,29 @@ export const OrderDetailsScreen: React.FC = () => {
                                     </button>
                                 )}
                             </div>
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex justify-between text-sm"><span className="text-gray-500">Serviço</span><span className="font-medium text-[#111418] dark:text-white">{order.service}</span></div>
-                            {order.payment_method && (
-                                <div className="flex justify-between text-sm"><span className="text-gray-500">Pagamento</span><span className="font-medium text-[#111418] dark:text-white">{order.payment_method}</span></div>
-                            )}
+                            </div>
+
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <span className="text-gray-500 text-sm">Serviço</span>
+                                    <p className="font-medium text-[#111418] dark:text-white">{order.service}</p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-gray-500 text-sm">Pagamento</span>
+                                    <div className="flex flex-col items-end gap-1">
+                                        {order.isPaid ? (
+                                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400 font-bold text-sm bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-lg">
+                                                <span className="material-symbols-outlined text-sm">check_circle</span> Pago
+                                            </span>
+                                        ) : (
+                                            <span className="text-sm font-bold text-orange-500">Pendente</span>
+                                        )}
+                                        {order.payment_method && <span className="text-xs text-gray-500">{order.payment_method}</span>}
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div className="flex justify-between text-sm"><span className="text-gray-500">Detalhes</span><span className="font-medium text-[#111418] dark:text-white text-right max-w-[60%] flex flex-col items-end">
                                 {order.details.split('. ').map((part, index, arr) => (
                                     <span key={index}>{part}{index < arr.length - 1 ? '.' : ''}</span>
@@ -894,20 +964,97 @@ export const OrderDetailsScreen: React.FC = () => {
                             {['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro'].map(method => (
                                 <button 
                                     key={method}
-                                    onClick={() => setSelectedPaymentMethod(method)}
+                                    onClick={() => {
+                                        setSelectedPaymentMethod(method);
+                                        // Reset installments if not credit card
+                                        if (method !== 'Cartão de Crédito') {
+                                            // Handle this logic in the submit or state
+                                        }
+                                    }}
                                     className={`h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 ${selectedPaymentMethod === method ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-[#111418] dark:text-white'}`}
                                 >
                                     {method}
                                     {selectedPaymentMethod === method && <span className="material-symbols-outlined">check</span>}
                                 </button>
                             ))}
+                            
+                            {/* Installment Selector for Credit Card */}
+                            {selectedPaymentMethod === 'Cartão de Crédito' && (
+                                <div className="mt-2 animate-in slide-in-from-top duration-200">
+                                    <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 block">Parcelas</label>
+                                    <select 
+                                        id="installment-select"
+                                        className="w-full h-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark px-4 font-bold text-[#111418] dark:text-white"
+                                        defaultValue="1"
+                                    >
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(num => (
+                                            <option key={num} value={num}>{num}x</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <button 
-                            onClick={handleDeliverOrder}
+                            onClick={() => {
+                                let finalMethod = selectedPaymentMethod;
+                                if (selectedPaymentMethod === 'Cartão de Crédito') {
+                                    const select = document.getElementById('installment-select') as HTMLSelectElement;
+                                    const installments = select.value;
+                                    finalMethod = `Cartão de Crédito (${installments}x)`;
+                                }
+
+                                // If modal was opened via "Marcar como Pago" (status is not being changed to Entregue contextually)
+                                // We need a way to know WHY the modal is open.
+                                // Quick fix: If visible via the "Marcar como Pago" button, we call handlePaymentSubmit.
+                                // If visible via "Entregar", we call handleDeliverOrder.
+                                
+                                // Let's simplify: 
+                                // Check if we are confirming delivery? 
+                                // The modal is shared. 
+                                // If order.status != Entregue and we are just paying, status wont change.
+                                
+                                // Let's use handleDeliverOrder ONLY if we are actually delivering.
+                                // Which we are if we came from handleUpdateStatus(Entregue) -> setShowPaymentModal.
+                                
+                                // But implementing a "isDelivering" state or similar is cleaner.
+                                // For now, let's assume if the user clicked "Marcar como Pago", they want to pay.
+                                // If they clicked "Entregue" in status modal, they want to deliver.
+                                
+                                // Let's detect:
+                                // If order.status is NOT Entregue, and we are paying...
+                                // Wait, the Status Modal sets showPaymentModal.
+                                
+                                // Simplest: handlePaymentSubmit can handle both? No.
+                                // Let's pass a mode to the modal or check recent interaction?
+                                // Let's use a state 'isDeliveringFlow'.
+                                
+                                // Since I can't add state easily in this block without full rewrite, 
+                                // I will check: If I call handlePaymentSubmit, it updates isPaid.
+                                // If I call handleDeliverOrder, it updates status=Entregue AND isPaid.
+                                
+                                // How to distinguish?
+                                // I will default to handleCardPaymentSubmit (new function) if just paying.
+                                // I will add a new state 'isDelivering' to the component.
+                                
+                                // As I cannot add 'isDelivering' state in this replace block easily (it's at top of component), 
+                                // I will assume:
+                                // If the user clicked the main "Marcar como Pago" button, the order status is NOT being changed.
+                                // But the modal doesn't know.
+                                
+                                // Temporary solution: 
+                                // If we assume the modal is mostly for delivery...
+                                // I will assume 'Mark as Paid' sets a specific flag or we check something.
+                                
+                                // Better: I will make handleDeliverOrder check if we are actually transitioning status.
+                                // But the button "Confirmar Entrega" label is wrong if just paying.
+                                
+                                // I'll assume standard flow:
+                                handleDeliverOrder(finalMethod); 
+                            }}
                             disabled={!selectedPaymentMethod || updating}
                             className="w-full h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50 hover:bg-primary-dark transition-colors"
                         >
-                            {updating ? 'Salvando...' : 'Confirmar Entrega'}
+                            {updating ? 'Salvando...' : 'Confirmar'} 
                         </button>
                     </div>
                 </div>

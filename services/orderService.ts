@@ -20,6 +20,7 @@ export const orderService = {
             value: Number(o.value),
             extras: o.extras || [],
             discount: o.discount || 0,
+            isPaid: !!o.payment_method, // Paid if payment_method is set
             client: {
                 id: o.client_id,
                 name: o.client_name,
