@@ -33,8 +33,17 @@ export const feeUtils = {
     },
 
     calculateNetValue: (amount: number, paymentMethod: string, fees: FeeConfig): number => {
+        if (!fees || !paymentMethod) return amount;
+        
         const feePercentage = fees[paymentMethod] || 0;
-        const discount = (amount * feePercentage) / 100;
-        return amount - discount;
+        
+        // Safety check if feePercentage is not a number
+        if (typeof feePercentage !== 'number') return amount;
+        
+        // Calculate discount and round to 2 decimal places to avoid floating point errors
+        const discountRaw = (amount * feePercentage) / 100;
+        const discountRounded = Math.round(discountRaw * 100) / 100;
+        
+        return Math.round((amount - discountRounded) * 100) / 100;
     }
 };
