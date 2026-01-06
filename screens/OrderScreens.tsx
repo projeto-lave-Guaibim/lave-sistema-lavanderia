@@ -723,6 +723,14 @@ export const OrderDetailsScreen: React.FC = () => {
         try {
             // Calculate fees to persist
             const currentFees = feeUtils.getFees();
+            
+            // Debug logs
+            console.log('=== PAYMENT CONFIRMATION DEBUG ===');
+            console.log('Payment Method:', methodToUse);
+            console.log('Order Value:', order.value);
+            console.log('All Fees Config:', currentFees);
+            console.log('Fee for this method:', currentFees[methodToUse]);
+            
             const netValue = feeUtils.calculateNetValue(order.value, methodToUse, currentFees);
             const fee = order.value - netValue;
             
@@ -732,6 +740,11 @@ export const OrderDetailsScreen: React.FC = () => {
             if (typeof feeConfig === 'number') {
                 feePercentage = feeConfig;
             }
+            
+            console.log('Fee Percentage:', feePercentage + '%');
+            console.log('Calculated Fee (R$):', fee);
+            console.log('Net Value (R$):', netValue);
+            console.log('===================================');
 
             // Just Paying (Mark as Paid) logic - save fee, netValue, and feePercentage
             await orderService.updateStatus(order.id, order.status, methodToUse, fee, netValue, feePercentage);

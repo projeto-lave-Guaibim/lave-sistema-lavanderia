@@ -4,6 +4,7 @@ import { Order, OrderStatus } from '../types';
 import Header from '../components/Header';
 import { orderService } from '../services/orderService';
 import { FeeConfigModal } from '../components/FeeConfigModal';
+import { RecalculatePaymentsButton } from '../components/RecalculatePaymentsButton';
 import { feeUtils } from '../utils/feeUtils';
 
 export const PaymentsScreen: React.FC = () => {
@@ -18,6 +19,25 @@ export const PaymentsScreen: React.FC = () => {
 
     useEffect(() => {
         fetchPayments();
+        
+        // Refresh when user comes back to this screen
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchPayments();
+            }
+        };
+        
+        const handleFocus = () => {
+            fetchPayments();
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     const fetchPayments = async () => {
