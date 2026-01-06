@@ -6,6 +6,7 @@ import { ClientModal } from './ClientScreens';
 import { openWhatsApp } from '../utils/whatsappUtils';
 import { orderService } from '../services/orderService';
 import { clientService } from '../services/clientService';
+import { feeUtils } from '../utils/feeUtils';
 
 export const OrdersListScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -683,13 +684,7 @@ export const OrderDetailsScreen: React.FC = () => {
     const handleUpdateStatus = async (newStatus: OrderStatus) => {
         if (!order) return;
         
-        if (newStatus === OrderStatus.Entregue) {
-            setShowStatusModal(false);
-            setIsDelivering(true);
-            setShowPaymentModal(true);
-            return;
-        }
-
+        // Decoupled logic: Just update status, do not prompt for payment.
         setUpdating(true);
         try {
             await orderService.updateStatus(order.id, newStatus);
@@ -720,45 +715,42 @@ export const OrderDetailsScreen: React.FC = () => {
         }
     };
 
-    const handleDeliverOrder = async (methodOverride?: string) => {
-        // If order is already paid AND we are delivering
-        if (order?.isPaid && isDelivering) {
-            setUpdating(true);
-            try {
-                await orderService.updateStatus(order.id, OrderStatus.Entregue);
-                setOrder({ ...order, status: OrderStatus.Entregue });
-                setShowStatusModal(false);
-            } catch (error) {
-                 console.error("Failed to update status", error);
-            } finally {
-                setUpdating(false);
-                setIsDelivering(false);
-            }
-            return;
-        }
-
+    const handleConfirmPayment = async (methodOverride?: string) => {
         const methodToUse = typeof methodOverride === 'string' ? methodOverride : selectedPaymentMethod;
         
         if (!order || !methodToUse) return;
         setUpdating(true);
         try {
-            if (isDelivering) {
-                // Delivering + Paying
-                await orderService.updateStatus(order.id, OrderStatus.Entregue, methodToUse); 
-                setOrder({ ...order, status: OrderStatus.Entregue, payment_method: methodToUse, isPaid: true });
-            } else {
-                // Just Paying (Mark as Paid)
-                // We keep status as is, but we set payment method.
-                await orderService.updateStatus(order.id, order.status, methodToUse);
-                setOrder({ ...order, payment_method: methodToUse, isPaid: true });
+            // Calculate fees to persist
+            const currentFees = feeUtils.getFees();
+            const netValue = feeUtils.calculateNetValue(order.value, methodToUse, currentFees);
+            const fee = order.value - netValue;
+            
+            // Calculate fee percentage for this payment method
+            let feePercentage = 0;
+            const feeConfig = currentFees[methodToUse as keyof typeof currentFees];
+            if (typeof feeConfig === 'number') {
+                feePercentage = feeConfig;
             }
+
+            // Just Paying (Mark as Paid) logic - save fee, netValue, and feePercentage
+            await orderService.updateStatus(order.id, order.status, methodToUse, fee, netValue, feePercentage);
+            setOrder({ 
+                ...order, 
+                payment_method: methodToUse, 
+                isPaid: true,
+                fee: fee,
+                netValue: netValue,
+                feePercentage: feePercentage,
+                payment_date: new Date().toISOString()
+            });
+            
             setShowPaymentModal(false);
         } catch (error) {
             console.error("Failed to update status", error);
             alert("Erro ao salvar.");
         } finally {
             setUpdating(false);
-            setIsDelivering(false);
         }
     };
 
@@ -784,6 +776,38 @@ export const OrderDetailsScreen: React.FC = () => {
         } catch (error) {
             console.error("Failed to update order", error);
             alert("Erro ao editar pedido.");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleRevertPayment = async () => {
+        if (!order || !order.isPaid) return;
+        
+        const confirmRevert = confirm(
+            'Tem certeza que deseja reverter o pagamento?\n\n' +
+            'Isso vai:\n' +
+            '- Remover o método de pagamento\n' +
+            '- Limpar a taxa e valor líquido\n' +
+            '- Marcar o pedido como NÃO PAGO'
+        );
+
+        if (!confirmRevert) return;
+
+        setUpdating(true);
+        try {
+            await orderService.clearPayment(order.id);
+            setOrder({ 
+                ...order, 
+                payment_method: undefined,
+                isPaid: false,
+                fee: 0,
+                netValue: 0
+            });
+            alert('Pagamento revertido com sucesso!');
+        } catch (error) {
+            console.error("Failed to revert payment", error);
+            alert("Erro ao reverter pagamento.");
         } finally {
             setUpdating(false);
         }
@@ -838,6 +862,15 @@ export const OrderDetailsScreen: React.FC = () => {
                                 >
                                     <span className="material-symbols-outlined">attach_money</span>
                                 </button>
+                                {order.isPaid && (
+                                    <button 
+                                        onClick={handleRevertPayment}
+                                        className="flex items-center justify-center size-10 rounded-full bg-orange-500/10 text-orange-500 hover:bg-orange-500 hover:text-white transition-colors"
+                                        title="Reverter Pagamento"
+                                    >
+                                        <span className="material-symbols-outlined">undo</span>
+                                    </button>
+                                )}
                                 {currentUser?.role === 'admin' && (
                                     <button 
                                         onClick={async () => {
@@ -885,7 +918,42 @@ export const OrderDetailsScreen: React.FC = () => {
                                     <span key={index}>{part}{index < arr.length - 1 ? '.' : ''}</span>
                                 ))}
                             </span></div>
-                            <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800"><span className="font-bold text-[#111418] dark:text-white">Total</span><span className="font-bold text-primary text-lg">R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                            {order.discount && order.discount > 0 && (
+                                <div className="flex justify-between text-sm text-red-500"><span className="font-medium">Desconto</span><span className="font-bold">- R$ {order.discount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
+                            )}
+                            {order.payment_method && (() => {
+                                // Use persisted values if they exist, otherwise calculate (fallback)
+                                const fees = feeUtils.getFees();
+                                const calculatedNet = feeUtils.calculateNetValue(order.value, order.payment_method, fees);
+                                const calculatedFee = order.value - calculatedNet;
+
+                                const displayFee = order.fee !== undefined ? order.fee : calculatedFee;
+                                const displayNet = order.netValue !== undefined ? order.netValue : calculatedNet;
+
+                                if (displayFee <= 0) return null;
+
+                                return (
+                                    <>
+                                        <div className="flex justify-between text-sm text-red-500">
+                                            <span className="font-medium">Taxa ({order.payment_method})</span>
+                                            <span className="font-bold">- R$ {displayFee.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <span className="font-bold text-gray-500">Subtotal</span>
+                                            <span className="font-bold text-gray-500 line-through text-sm">R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <div className="flex justify-between text-sm">
+                                            <span className="font-bold text-[#111418] dark:text-white">Total a Receber</span>
+                                            <span className="font-bold text-primary text-lg">R$ {displayNet.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    </>
+                                );
+                            })() || (
+                                <div className="flex justify-between text-sm pt-2 border-t border-gray-100 dark:border-gray-800">
+                                    <span className="font-bold text-[#111418] dark:text-white">Total</span>
+                                    <span className="font-bold text-primary text-lg">R$ {order.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -964,13 +1032,7 @@ export const OrderDetailsScreen: React.FC = () => {
                             {['Pix', 'Cartão de Crédito', 'Cartão de Débito', 'Dinheiro'].map(method => (
                                 <button 
                                     key={method}
-                                    onClick={() => {
-                                        setSelectedPaymentMethod(method);
-                                        // Reset installments if not credit card
-                                        if (method !== 'Cartão de Crédito') {
-                                            // Handle this logic in the submit or state
-                                        }
-                                    }}
+                                    onClick={() => setSelectedPaymentMethod(method)}
                                     className={`h-12 rounded-xl font-bold text-sm flex items-center justify-between px-4 ${selectedPaymentMethod === method ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 text-[#111418] dark:text-white'}`}
                                 >
                                     {method}
@@ -1003,58 +1065,12 @@ export const OrderDetailsScreen: React.FC = () => {
                                     finalMethod = `Cartão de Crédito (${installments}x)`;
                                 }
 
-                                // If modal was opened via "Marcar como Pago" (status is not being changed to Entregue contextually)
-                                // We need a way to know WHY the modal is open.
-                                // Quick fix: If visible via the "Marcar como Pago" button, we call handlePaymentSubmit.
-                                // If visible via "Entregar", we call handleDeliverOrder.
-                                
-                                // Let's simplify: 
-                                // Check if we are confirming delivery? 
-                                // The modal is shared. 
-                                // If order.status != Entregue and we are just paying, status wont change.
-                                
-                                // Let's use handleDeliverOrder ONLY if we are actually delivering.
-                                // Which we are if we came from handleUpdateStatus(Entregue) -> setShowPaymentModal.
-                                
-                                // But implementing a "isDelivering" state or similar is cleaner.
-                                // For now, let's assume if the user clicked "Marcar como Pago", they want to pay.
-                                // If they clicked "Entregue" in status modal, they want to deliver.
-                                
-                                // Let's detect:
-                                // If order.status is NOT Entregue, and we are paying...
-                                // Wait, the Status Modal sets showPaymentModal.
-                                
-                                // Simplest: handlePaymentSubmit can handle both? No.
-                                // Let's pass a mode to the modal or check recent interaction?
-                                // Let's use a state 'isDeliveringFlow'.
-                                
-                                // Since I can't add state easily in this block without full rewrite, 
-                                // I will check: If I call handlePaymentSubmit, it updates isPaid.
-                                // If I call handleDeliverOrder, it updates status=Entregue AND isPaid.
-                                
-                                // How to distinguish?
-                                // I will default to handleCardPaymentSubmit (new function) if just paying.
-                                // I will add a new state 'isDelivering' to the component.
-                                
-                                // As I cannot add 'isDelivering' state in this replace block easily (it's at top of component), 
-                                // I will assume:
-                                // If the user clicked the main "Marcar como Pago" button, the order status is NOT being changed.
-                                // But the modal doesn't know.
-                                
-                                // Temporary solution: 
-                                // If we assume the modal is mostly for delivery...
-                                // I will assume 'Mark as Paid' sets a specific flag or we check something.
-                                
-                                // Better: I will make handleDeliverOrder check if we are actually transitioning status.
-                                // But the button "Confirmar Entrega" label is wrong if just paying.
-                                
-                                // I'll assume standard flow:
-                                handleDeliverOrder(finalMethod); 
+                                handleConfirmPayment(finalMethod); 
                             }}
                             disabled={!selectedPaymentMethod || updating}
                             className="w-full h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50 hover:bg-primary-dark transition-colors"
                         >
-                            {updating ? 'Salvando...' : 'Confirmar'} 
+                            Confirmar Pagamento
                         </button>
                     </div>
                 </div>

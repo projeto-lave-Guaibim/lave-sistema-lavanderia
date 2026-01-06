@@ -10,10 +10,10 @@ import DashboardScreen from './screens/DashboardScreen';
 import { ClientsListScreen } from './screens/ClientScreens';
 import { OrdersListScreen, NewOrderScreen, OrderDetailsScreen } from './screens/OrderScreens';
 import { StockControlScreen, AddStockItemScreen, EditStockItemScreen } from './screens/StockScreen';
-import { CashFlowScreen, AddTransactionScreen } from './screens/FinanceScreens';
 import InvoiceScreen from './screens/InvoiceScreen';
 import { ServiceRegistryScreen } from './screens/ServiceRegistryScreen';
 import { ItemRegistryScreen } from './screens/ItemRegistryScreen';
+import { PaymentsScreen } from './screens/PaymentsScreen';
 import UserScreen from './screens/UserScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
@@ -58,8 +58,7 @@ const App = () => {
                             <Route path="stock/edit/:itemId" element={<EditStockItemScreen />} />
                             <Route path="services" element={<ServiceRegistryScreen />} />
                             <Route path="items" element={<ItemRegistryScreen />} />
-                            <Route path="finance" element={<CashFlowScreen />} />
-                            <Route path="finance/new" element={<AddTransactionScreen />} />
+                            <Route path="payments" element={<PaymentsScreen />} />
                             <Route path="profile" element={<UserScreen />} />
                         </Route>
                     </Routes>

@@ -21,6 +21,10 @@ export const orderService = {
             extras: o.extras || [],
             discount: o.discount || 0,
             isPaid: !!o.payment_method, // Paid if payment_method is set
+            fee: o.fee || 0,
+            netValue: o.net_value || 0, // Map from snake_case DB column
+            payment_date: o.payment_date,
+            feePercentage: o.fee_percentage || 0,
             client: {
                 id: o.client_id,
                 name: o.client_name,
@@ -81,15 +85,38 @@ export const orderService = {
         if (error) throw new Error(error.message);
     },
 
-    updateStatus: async (id: number, status: string, paymentMethod?: string) => {
+    updateStatus: async (id: number, status: string, paymentMethod?: string, fee?: number, netValue?: number, feePercentage?: number) => {
         const updates: any = { status };
         if (paymentMethod) {
             updates.payment_method = paymentMethod;
+            updates.payment_date = new Date().toISOString(); // Save current timestamp
+        }
+        if (typeof fee === 'number') {
+            updates.fee = fee;
+        }
+        if (typeof netValue === 'number') {
+            updates.net_value = netValue;
+        }
+        if (typeof feePercentage === 'number') {
+            updates.fee_percentage = feePercentage;
         }
 
         const { error } = await supabase
             .from('orders')
             .update(updates)
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+    },
+
+    clearPayment: async (id: number) => {
+        const { error } = await supabase
+            .from('orders')
+            .update({
+                payment_method: null,
+                fee: 0,
+                net_value: 0
+            })
             .eq('id', id);
 
         if (error) throw new Error(error.message);

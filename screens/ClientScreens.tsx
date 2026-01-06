@@ -16,14 +16,15 @@ export const ClientsListScreen: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [selectedClient, setSelectedClient] = useState<Client | undefined>(undefined);
     const [filterType, setFilterType] = useState<string>('all');
+    const [showHidden, setShowHidden] = useState(false);
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [showHidden]);
 
     const fetchClients = async () => {
         try {
-            const data = await clientService.getAll();
+            const data = await clientService.getAll(showHidden);
             setClients(data);
         } catch (error: any) {
             console.error("Failed to fetch clients", error);
@@ -85,6 +86,14 @@ export const ClientsListScreen: React.FC = () => {
                         <p className="text-sm font-medium leading-normal">{filter.label}</p>
                     </button>
                 ))}
+                <button 
+                    onClick={() => setShowHidden(!showHidden)} 
+                    className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${showHidden ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30' : 'bg-[#f0f2f4] dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-gray-300'}`}
+                    title={showHidden ? 'Ocultar clientes arquivados' : 'Mostrar clientes arquivados'}
+                >
+                    <span className="material-symbols-outlined text-sm">{showHidden ? 'visibility_off' : 'visibility'}</span>
+                    <p className="text-sm font-medium leading-normal">{showHidden ? 'Ocultar Arquivados' : 'Mostrar Arquivados'}</p>
+                </button>
             </div>
 
             <main className="flex-1 overflow-y-auto no-scrollbar bg-background-light dark:bg-background-dark p-4 pb-24">
@@ -223,31 +232,65 @@ export const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuc
                     </div>
                 </div>
 
-                <div className="p-6 border-t border-gray-100 dark:border-gray-800 flex justify-between gap-3 bg-gray-50 dark:bg-gray-900/50">
-                    {client && (
+                <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50">
+                    <div className="flex flex-wrap gap-3">
+                        {client && (
+                            <>
+                                <button 
+                                    onClick={async () => {
+                                        const action = client.isHidden ? 'reexibir' : 'ocultar';
+                                        if (confirm(`Tem certeza que deseja ${action} este cliente?`)) {
+                                            setSubmitting(true);
+                                            try {
+                                                if (client.isHidden) {
+                                                    await clientService.unhide(client.id);
+                                                } else {
+                                                    await clientService.hide(client.id);
+                                                }
+                                                onSuccess();
+                                            } catch (error: any) {
+                                                alert(`Erro ao ${action}: ` + error.message);
+                                                setSubmitting(false);
+                                            }
+                                        }
+                                    }}
+                                    disabled={submitting}
+                                    className="flex-1 min-w-[120px] px-4 py-3 rounded-xl border border-orange-200 text-orange-600 font-bold hover:bg-orange-50 transition-colors"
+                                >
+                                    {client.isHidden ? 'Reexibir' : 'Ocultar'}
+                                </button>
+                                <button 
+                                    onClick={async () => {
+                                        if (confirm('Tem certeza que deseja excluir este cliente?')) {
+                                            setSubmitting(true);
+                                            try {
+                                                await clientService.delete(client.id);
+                                                onSuccess();
+                                            } catch (error: any) {
+                                                alert('Erro ao excluir: ' + error.message);
+                                                setSubmitting(false);
+                                            }
+                                        }
+                                    }}
+                                    disabled={submitting}
+                                    className="flex-1 min-w-[120px] px-4 py-3 rounded-xl border border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors"
+                                >
+                                    Excluir
+                                </button>
+                            </>
+                        )}
                         <button 
-                            onClick={async () => {
-                                if (confirm('Tem certeza que deseja excluir este cliente?')) {
-                                    setSubmitting(true);
-                                    try {
-                                        await clientService.delete(client.id);
-                                        onSuccess();
-                                    } catch (error: any) {
-                                        alert('Erro ao excluir: ' + error.message);
-                                        setSubmitting(false);
-                                    }
-                                }
-                            }}
-                            disabled={submitting}
-                            className="px-6 py-3 rounded-xl border border-red-200 text-red-600 font-bold hover:bg-red-50 transition-colors"
+                            onClick={onClose} 
+                            className="flex-1 min-w-[120px] px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
-                            Excluir
+                            Cancelar
                         </button>
-                    )}
-                    <div className="flex gap-3 ml-auto">
-                        <button onClick={onClose} className="px-6 py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">Cancelar</button>
-                        <button onClick={handleSubmit} disabled={submitting} className="px-6 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20 disabled:opacity-50">
-                            {submitting ? 'Salvando...' : (client ? 'Salvar Alterações' : 'Cadastrar cliente')}
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={submitting} 
+                            className="flex-1 min-w-[140px] px-4 py-3 rounded-xl bg-primary text-white font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20 disabled:opacity-50"
+                        >
+                            {submitting ? 'Salvando...' : (client ? 'Salvar' : 'Cadastrar')}
                         </button>
                     </div>
                 </div>

@@ -2,18 +2,25 @@ import { supabase } from './supabaseClient';
 import { Client } from '../types';
 
 export const clientService = {
-    getAll: async (): Promise<Client[]> => {
-        const { data, error } = await supabase
+    getAll: async (includeHidden: boolean = false): Promise<Client[]> => {
+        let query = supabase
             .from('clients')
-            .select('*')
-            .order('name');
+            .select('*');
+        
+        // Filter out hidden clients by default
+        if (!includeHidden) {
+            query = query.or('is_hidden.is.null,is_hidden.eq.false');
+        }
+        
+        const { data, error } = await query.order('name');
             
         if (error) throw new Error(error.message);
         
         return (data || []).map((client: any) => ({
             ...client,
             phone: client.mobile, // Map mobile from DB to phone for frontend
-            tags: client.tags || []
+            tags: client.tags || [],
+            isHidden: client.is_hidden || false
         }));
     },
 
@@ -71,6 +78,24 @@ export const clientService = {
         const { error } = await supabase
             .from('clients')
             .delete()
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+    },
+
+    hide: async (id: string) => {
+        const { error } = await supabase
+            .from('clients')
+            .update({ is_hidden: true })
+            .eq('id', id);
+
+        if (error) throw new Error(error.message);
+    },
+
+    unhide: async (id: string) => {
+        const { error } = await supabase
+            .from('clients')
+            .update({ is_hidden: false })
             .eq('id', id);
 
         if (error) throw new Error(error.message);

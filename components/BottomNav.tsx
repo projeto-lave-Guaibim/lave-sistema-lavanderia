@@ -7,13 +7,11 @@ const navItems = [
     { path: '/clients', icon: 'group', label: 'Clientes' },
     { path: '/orders', icon: 'local_laundry_service', label: 'Pedidos' },
     { path: '/stock', icon: 'inventory_2', label: 'Estoque' },
-    { path: '/finance', icon: 'payments', label: 'Financeiro' },
 ];
 
 const formPagesWithTopIndicator = {
     '/orders/new': '/orders',
-    '/finance/new': '/finance',
-    '/stock/new': '/stock', // Assuming a new stock page might exist
+    '/stock/new': '/stock',
 };
 
 const BottomNav: React.FC = () => {
@@ -25,7 +23,6 @@ const BottomNav: React.FC = () => {
         if (mappedPath) return mappedPath;
         if (currentPath.startsWith('/clients')) return '/clients';
         if (currentPath.startsWith('/orders')) return '/orders';
-        if (currentPath.startsWith('/finance')) return '/finance';
         if (currentPath.startsWith('/stock')) return '/stock';
         return currentPath;
     };

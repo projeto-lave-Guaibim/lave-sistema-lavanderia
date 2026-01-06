@@ -20,6 +20,7 @@ export interface Client {
   email?: string;
   document?: string; // CPF or CNPJ
   notes?: string;
+  isHidden?: boolean;
 }
 
 export interface Order {
@@ -34,6 +35,10 @@ export interface Order {
   extras?: Extra[];
   discount?: number;
   isPaid?: boolean;
+  fee?: number;
+  netValue?: number;
+  payment_date?: string;
+  feePercentage?: number;
 }
 
 
@@ -58,6 +63,8 @@ export interface Transaction {
   clientName: string;
   date: string;
   amount: number;
+  originalAmount?: number;
+  fee?: number;
   paid: boolean;
   icon: string;
 }

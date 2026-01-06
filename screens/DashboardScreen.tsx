@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Order, OrderStatus, Transaction, TransactionType, StockItem } from '../types';
 import { useTheme } from '../context/ThemeContext';
@@ -15,10 +15,11 @@ const DashboardScreen: React.FC = () => {
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     
     const [loading, setLoading] = useState(true);
-    const [financials, setFinancials] = useState({ income: 0, expense: 0, profit: 0 });
+    const [financials, setFinancials] = useState({ income: 0, expense: 0, profit: 0, receivables: 0 });
     const [stockAlert, setStockAlert] = useState<StockItem | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [chartData, setChartData] = useState<{ day: string; income: number; expense: number }[]>([]);
+    const [currentDate, setCurrentDate] = useState(new Date());
 
     useEffect(() => {
         const fetchData = async () => {
@@ -58,8 +59,13 @@ const DashboardScreen: React.FC = () => {
                 const expense = allTransactions
                     .filter(t => t.type === TransactionType.Despesa)
                     .reduce((acc, curr) => acc + curr.amount, 0);
+                
+                // Calculate receivables (unpaid orders)
+                const receivables = allTransactions
+                    .filter(t => t.type === TransactionType.Receita && !t.paid)
+                    .reduce((acc, curr) => acc + curr.amount, 0);
 
-                setFinancials({ income, expense, profit: income - expense });
+                setFinancials({ income, expense, profit: income - expense, receivables });
 
                 // 3. Process Stock Alerts
                 const alertItem = stockData.find(item => item.quantity <= item.minQuantity);
@@ -117,6 +123,39 @@ const DashboardScreen: React.FC = () => {
         };
         fetchData();
     }, []);
+
+    // Filter transactions by selected month
+    const monthlyTransactions = useMemo(() => {
+        return transactions.filter(tx => {
+            let dateObj: Date;
+            if (tx.date.includes('/')) {
+                const [day, month, year] = tx.date.split('/').map(Number);
+                dateObj = new Date(year, month - 1, day);
+            } else {
+                dateObj = new Date(tx.date);
+                dateObj = new Date(dateObj.valueOf() + dateObj.getTimezoneOffset() * 60000);
+            }
+            
+            return dateObj.getMonth() === currentDate.getMonth() && dateObj.getFullYear() === currentDate.getFullYear();
+        });
+    }, [transactions, currentDate]);
+
+    // Recalculate financials for selected month
+    const monthlyFinancials = useMemo(() => {
+        const income = monthlyTransactions
+            .filter(t => t.type === TransactionType.Receita && t.paid)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+        
+        const expense = monthlyTransactions
+            .filter(t => t.type === TransactionType.Despesa)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+        
+        const receivables = monthlyTransactions
+            .filter(t => t.type === TransactionType.Receita && !t.paid)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
+        return { income, expense, profit: income - expense, receivables };
+    }, [monthlyTransactions]);
 
     // Chart Helper
     const renderChart = () => {
@@ -208,21 +247,52 @@ const DashboardScreen: React.FC = () => {
                 <div className="flex flex-col gap-4 p-4">
                     
                     {/* Financial Summary Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20">
                             <div className="flex items-center gap-2 text-white/80"><span className="material-symbols-outlined text-[20px]">account_balance_wallet</span><p className="text-sm font-medium">Lucro Líquido</p></div>
                             <div>
-                                <p className="text-white text-3xl font-bold tracking-tight">R$ {financials.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-white text-3xl font-bold tracking-tight">R$ {monthlyFinancials.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">payments</span><p className="text-sm font-medium">Receita</p></div><div className="size-2 rounded-full bg-green-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">shopping_cart</span><p className="text-sm font-medium">Despesa</p></div><div className="size-2 rounded-full bg-red-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {financials.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
+                        <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
+                            <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">schedule</span><p className="text-sm font-medium">A Receber</p></div><div className="size-2 rounded-full bg-orange-500"></div></div>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.receivables.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
+                    </div>
+
+                    {/* Month Filter */}
+                    <div className="flex items-center justify-between bg-white dark:bg-[#1a222d] rounded-2xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+                        <button 
+                            onClick={() => {
+                                const newDate = new Date(currentDate);
+                                newDate.setMonth(newDate.getMonth() - 1);
+                                setCurrentDate(newDate);
+                            }}
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[#111418] dark:text-white">chevron_left</span>
+                        </button>
+                        <h3 className="text-[#111418] dark:text-white text-lg font-bold">
+                            {currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).charAt(0).toUpperCase() + currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).slice(1)}
+                        </h3>
+                        <button 
+                            onClick={() => {
+                                const newDate = new Date(currentDate);
+                                newDate.setMonth(newDate.getMonth() + 1);
+                                setCurrentDate(newDate);
+                            }}
+                            className="flex items-center justify-center size-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[#111418] dark:text-white">chevron_right</span>
+                        </button>
                     </div>
 
                     {/* Chart Section */}
@@ -259,12 +329,12 @@ const DashboardScreen: React.FC = () => {
                     <div className="flex flex-col gap-0 pt-2 pb-6">
                         <div className="flex items-center justify-between pb-3"><h3 className="text-[#111418] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Histórico Recente</h3></div>
                         <div className="flex flex-col bg-white dark:bg-[#1a222d] rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
-                            {transactions.length > 0 ? (
-                                transactions.slice(0, 10).map((tx, index) => (
+                            {monthlyTransactions.length > 0 ? (
+                                monthlyTransactions.slice(0, 10).map((tx, index) => (
                                     <TransactionItem key={tx.id} transaction={tx} onClick={() => handleTransactionClick(tx)} />
                                 ))
                             ) : (
-                                <div className="text-center text-gray-500 py-8">Nenhuma movimentação recente.</div>
+                                <div className="text-center text-gray-500 py-8">Nenhuma movimentação neste mês.</div>
                             )}
                         </div>
                     </div>
