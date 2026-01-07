@@ -259,6 +259,8 @@ const DashboardScreen: React.FC = () => {
         );
     };
 
+    const [showValues, setShowValues] = useState(false);
+
     // Transaction Click Handler
     const handleTransactionClick = (transaction: Transaction) => {
         // Check if it's an order based on description format "Pedido #XXXX"
@@ -272,6 +274,13 @@ const DashboardScreen: React.FC = () => {
         }
     };
 
+    const formatValue = (value: number) => {
+        if (showValues) {
+            return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        return 'R$ ****';
+    };
+
     if (loading) return <div className="flex justify-center items-center h-full"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
 
     return (
@@ -282,6 +291,11 @@ const DashboardScreen: React.FC = () => {
                 leftIcon={<div className="flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-full"><span className="material-symbols-outlined text-primary">local_laundry_service</span></div>}
                 rightActions={
                     <>
+                        <button onClick={() => setShowValues(!showValues)} className="flex items-center justify-center rounded-full size-10 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title={showValues ? "Ocultar valores" : "Mostrar valores"}>
+                            <span className="material-symbols-outlined text-[#111418] dark:text-white">
+                                {showValues ? 'visibility' : 'visibility_off'}
+                            </span>
+                        </button>
                         <button onClick={toggleTheme} className="flex items-center justify-center rounded-full size-10 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                             <span className="material-symbols-outlined text-[#111418] dark:text-white">
                                 {theme === 'dark' ? 'light_mode' : 'dark_mode'}
@@ -302,22 +316,22 @@ const DashboardScreen: React.FC = () => {
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20">
                             <div className="flex items-center gap-2 text-white/80"><span className="material-symbols-outlined text-[20px]">account_balance_wallet</span><p className="text-sm font-medium">Lucro Líquido</p></div>
                             <div>
-                                <p className="text-white text-3xl font-bold tracking-tight">R$ {metrics.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                <p className="text-white/60 text-xs mt-1 bg-white/10 inline-block px-2 py-0.5 rounded-full">A Receber: R$ {metrics.receivables.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-white text-3xl font-bold tracking-tight">{formatValue(metrics.profit)}</p>
+                                <p className="text-white/60 text-xs mt-1 bg-white/10 inline-block px-2 py-0.5 rounded-full">A Receber: {formatValue(metrics.receivables)}</p>
                             </div>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">payments</span><p className="text-sm font-medium">Receita</p></div><div className="size-2 rounded-full bg-green-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">{formatValue(metrics.income)}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">shopping_cart</span><p className="text-sm font-medium">Despesa</p></div><div className="size-2 rounded-full bg-red-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">{formatValue(metrics.expense)}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">savings</span><p className="text-sm font-medium">Fluxo de Caixa</p></div><div className="size-2 rounded-full bg-blue-500"></div></div>
                             <div className="flex flex-col">
-                                <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.cashFlow.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">{formatValue(metrics.cashFlow)}</p>
                                 <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">Capital de Giro (Mês Atual + Anterior)</p>
                             </div>
                         </div>
