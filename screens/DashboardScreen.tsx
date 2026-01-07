@@ -15,7 +15,7 @@ const DashboardScreen: React.FC = () => {
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
     
     const [loading, setLoading] = useState(true);
-    const [financials, setFinancials] = useState({ income: 0, expense: 0, profit: 0, receivables: 0 });
+    // Removed financials state as it's computed in useMemo
     const [stockAlert, setStockAlert] = useState<StockItem | null>(null);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [chartData, setChartData] = useState<{ day: string; income: number; expense: number }[]>([]);
@@ -52,22 +52,6 @@ const DashboardScreen: React.FC = () => {
                 });
 
                 setTransactions(allTransactions);
-
-                // 2. Calculate Financials (Total)
-                const income = allTransactions
-                    .filter(t => t.type === TransactionType.Receita && t.paid)
-                    .reduce((acc, curr) => acc + curr.amount, 0);
-                
-                const expense = allTransactions
-                    .filter(t => t.type === TransactionType.Despesa)
-                    .reduce((acc, curr) => acc + curr.amount, 0);
-                
-                // Calculate receivables (unpaid orders)
-                const receivables = allTransactions
-                    .filter(t => t.type === TransactionType.Receita && !t.paid)
-                    .reduce((acc, curr) => acc + curr.amount, 0);
-
-                setFinancials({ income, expense, profit: income - expense, receivables });
 
                 // 3. Process Stock Alerts
                 const alertItem = stockData.find(item => item.quantity <= item.minQuantity);
@@ -167,7 +151,9 @@ const DashboardScreen: React.FC = () => {
     }, [transactions, currentDate]);
 
     // Recalculate financials for selected month
-    const monthlyFinancials = useMemo(() => {
+    // Recalculate financials for selected month and cash flow
+    const metrics = useMemo(() => {
+        // 1. Selected Month Financials
         const income = monthlyTransactions
             .filter(t => t.type === TransactionType.Receita && t.paid)
             .reduce((acc, curr) => acc + curr.amount, 0);
@@ -180,17 +166,47 @@ const DashboardScreen: React.FC = () => {
             .filter(t => t.type === TransactionType.Receita && !t.paid)
             .reduce((acc, curr) => acc + curr.amount, 0);
 
-        console.log('Dashboard Financials:', {
-            totalTransactions: monthlyTransactions.length,
-            income,
-            expense,
-            profit: income - expense,
-            receivables,
-            despesas: monthlyTransactions.filter(t => t.type === TransactionType.Despesa)
+        const currentMonthProfit = income - expense;
+
+        // 2. Previous Month Profit Calculation
+        const prevMonthDate = new Date(currentDate);
+        prevMonthDate.setMonth(currentDate.getMonth() - 1);
+        
+        const prevMonthTransactions = transactions.filter(tx => {
+            let dateObj: Date;
+            if (tx.date.includes('/')) {
+                const [day, month, year] = tx.date.split('/').map(Number);
+                dateObj = new Date(year, month - 1, day);
+            } else {
+                const [year, month, day] = tx.date.split('-').map(Number);
+                dateObj = new Date(year, month - 1, day);
+            }
+            
+            return dateObj.getMonth() === prevMonthDate.getMonth() && dateObj.getFullYear() === prevMonthDate.getFullYear();
         });
 
-        return { income, expense, profit: income - expense, receivables };
-    }, [monthlyTransactions]);
+        const prevIncome = prevMonthTransactions
+            .filter(t => t.type === TransactionType.Receita && t.paid)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
+        const prevExpense = prevMonthTransactions
+            .filter(t => t.type === TransactionType.Despesa)
+            .reduce((acc, curr) => acc + curr.amount, 0);
+
+        const prevMonthProfit = prevIncome - prevExpense;
+
+        // 3. Cash Flow (Working Capital) = Current Month Profit + Previous Month Profit
+        const cashFlow = currentMonthProfit + prevMonthProfit;
+
+        return { 
+            income, 
+            expense, 
+            profit: currentMonthProfit, 
+            receivables,
+            cashFlow,
+            prevMonthProfit // Optional, helpful for debugging or showing details
+        };
+    }, [monthlyTransactions, transactions, currentDate]);
 
     // Chart Helper
     const renderChart = () => {
@@ -286,20 +302,24 @@ const DashboardScreen: React.FC = () => {
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-primary p-4 shadow-lg shadow-primary/20">
                             <div className="flex items-center gap-2 text-white/80"><span className="material-symbols-outlined text-[20px]">account_balance_wallet</span><p className="text-sm font-medium">Lucro Líquido</p></div>
                             <div>
-                                <p className="text-white text-3xl font-bold tracking-tight">R$ {monthlyFinancials.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-white text-3xl font-bold tracking-tight">R$ {metrics.profit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-white/60 text-xs mt-1 bg-white/10 inline-block px-2 py-0.5 rounded-full">A Receber: R$ {metrics.receivables.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             </div>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">payments</span><p className="text-sm font-medium">Receita</p></div><div className="size-2 rounded-full bg-green-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.income.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
                             <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">shopping_cart</span><p className="text-sm font-medium">Despesa</p></div><div className="size-2 rounded-full bg-red-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.expense.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
                         <div className="flex flex-col justify-between gap-3 rounded-2xl bg-white dark:bg-[#1a222d] border border-[#dce0e5] dark:border-gray-800 p-4">
-                            <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">schedule</span><p className="text-sm font-medium">A Receber</p></div><div className="size-2 rounded-full bg-orange-500"></div></div>
-                            <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {monthlyFinancials.receivables.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                            <div className="flex items-center justify-between"><div className="flex items-center gap-2 text-[#637288] dark:text-gray-400"><span className="material-symbols-outlined text-[20px]">savings</span><p className="text-sm font-medium">Fluxo de Caixa</p></div><div className="size-2 rounded-full bg-blue-500"></div></div>
+                            <div className="flex flex-col">
+                                <p className="text-[#111418] dark:text-white text-2xl font-bold tracking-tight">R$ {metrics.cashFlow.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">Capital de Giro (Mês Atual + Anterior)</p>
+                            </div>
                         </div>
                     </div>
 
