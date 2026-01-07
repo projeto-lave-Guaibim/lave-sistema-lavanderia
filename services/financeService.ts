@@ -40,6 +40,49 @@ export const financeService = {
         return data;
     },
 
+    getById: async (id: string): Promise<Transaction | null> => {
+        const { data, error } = await supabase
+            .from('finance')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') return null; // Not found
+            throw new Error(error.message);
+        }
+
+        return {
+            ...data,
+            amount: Number(data.amount),
+            date: data.date, // Keep original format
+            paid: data.paid,
+            clientName: data.client_name,
+            icon: data.icon
+        };
+    },
+
+    update: async (id: string, transaction: Omit<Transaction, 'id'>) => {
+        const { data, error } = await supabase
+            .from('finance')
+            .update({
+                description: transaction.description,
+                amount: transaction.amount,
+                type: transaction.type,
+                category: ((transaction as any).category) || null,
+                date: transaction.date,
+                paid: transaction.paid,
+                client_name: transaction.clientName,
+                icon: transaction.icon
+            })
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw new Error(error.message);
+        return data;
+    },
+
     delete: async (id: string) => {
         const { error } = await supabase
             .from('finance')

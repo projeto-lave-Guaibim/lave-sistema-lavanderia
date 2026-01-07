@@ -17,6 +17,9 @@ import { PaymentsScreen } from './screens/PaymentsScreen';
 import UserScreen from './screens/UserScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import { NewOrderScreenV2 } from './screens/NewOrderScreenV2';
+import NewFinanceScreen from './screens/NewFinanceScreen';
+import EditFinanceScreen from './screens/EditFinanceScreen';
 
 import Sidebar from './components/Sidebar';
 import { useState } from 'react';
@@ -51,6 +54,7 @@ const App = () => {
                             <Route path="clients" element={<ClientsListScreen />} />
                             <Route path="orders" element={<OrdersListScreen />} />
                             <Route path="orders/new" element={<NewOrderScreen />} />
+                            <Route path="orders/new-v2" element={<NewOrderScreenV2 />} />
                             <Route path="orders/:orderId" element={<OrderDetailsScreen />} />
                             <Route path="orders/:orderId/invoice" element={<InvoiceScreen />} />
                             <Route path="stock" element={<StockControlScreen />} />
@@ -59,6 +63,8 @@ const App = () => {
                             <Route path="services" element={<ServiceRegistryScreen />} />
                             <Route path="items" element={<ItemRegistryScreen />} />
                             <Route path="payments" element={<PaymentsScreen />} />
+                            <Route path="finance/new" element={<NewFinanceScreen />} />
+                            <Route path="finance/edit/:transactionId" element={<EditFinanceScreen />} />
                             <Route path="profile" element={<UserScreen />} />
                         </Route>
                     </Routes>

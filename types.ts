@@ -39,6 +39,17 @@ export interface Order {
   netValue?: number;
   payment_date?: string;
   feePercentage?: number;
+  orderItems?: OrderItem[]; // New: array of line items for multiple services
+}
+
+export interface OrderItem {
+  id?: number;
+  order_id?: number;
+  service_id?: number;
+  service_name: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
 }
 
 

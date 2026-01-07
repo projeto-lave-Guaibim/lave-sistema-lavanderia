@@ -30,6 +30,8 @@ const DashboardScreen: React.FC = () => {
                     stockService.getAll()
                 ]);
 
+                console.log('Finance Data fetched:', financeData);
+
                 // 1. Merge Orders and Transactions
                 const orderTransactions: Transaction[] = ordersData.map(order => ({
                     id: (100000 + order.id).toString(),
@@ -87,11 +89,13 @@ const DashboardScreen: React.FC = () => {
                         // Normalize transaction date to Date object for comparison
                         let tDate: Date;
                         if (t.date.includes('/')) {
+                            // DD/MM/YYYY format
                             const [d, m, y] = t.date.split('/').map(Number);
                             tDate = new Date(y, m - 1, d);
                         } else {
-                            tDate = new Date(t.date);
-                            tDate = new Date(tDate.valueOf() + tDate.getTimezoneOffset() * 60000);
+                            // YYYY-MM-DD format (ISO) - parse without timezone issues
+                            const [y, m, d] = t.date.split('-').map(Number);
+                            tDate = new Date(y, m - 1, d);
                         }
                         return tDate.getDate() === date.getDate() && 
                                tDate.getMonth() === date.getMonth() && 
@@ -121,7 +125,27 @@ const DashboardScreen: React.FC = () => {
                 setLoading(false);
             }
         };
+        
         fetchData();
+        
+        // Refresh when user comes back to this screen
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                fetchData();
+            }
+        };
+        
+        const handleFocus = () => {
+            fetchData();
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+        
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
     }, []);
 
     // Filter transactions by selected month
@@ -129,11 +153,13 @@ const DashboardScreen: React.FC = () => {
         return transactions.filter(tx => {
             let dateObj: Date;
             if (tx.date.includes('/')) {
+                // DD/MM/YYYY format
                 const [day, month, year] = tx.date.split('/').map(Number);
                 dateObj = new Date(year, month - 1, day);
             } else {
-                dateObj = new Date(tx.date);
-                dateObj = new Date(dateObj.valueOf() + dateObj.getTimezoneOffset() * 60000);
+                // YYYY-MM-DD format (ISO) - parse without timezone issues
+                const [year, month, day] = tx.date.split('-').map(Number);
+                dateObj = new Date(year, month - 1, day);
             }
             
             return dateObj.getMonth() === currentDate.getMonth() && dateObj.getFullYear() === currentDate.getFullYear();
@@ -153,6 +179,15 @@ const DashboardScreen: React.FC = () => {
         const receivables = monthlyTransactions
             .filter(t => t.type === TransactionType.Receita && !t.paid)
             .reduce((acc, curr) => acc + curr.amount, 0);
+
+        console.log('Dashboard Financials:', {
+            totalTransactions: monthlyTransactions.length,
+            income,
+            expense,
+            profit: income - expense,
+            receivables,
+            despesas: monthlyTransactions.filter(t => t.type === TransactionType.Despesa)
+        });
 
         return { income, expense, profit: income - expense, receivables };
     }, [monthlyTransactions]);

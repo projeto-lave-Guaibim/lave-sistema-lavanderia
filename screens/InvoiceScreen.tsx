@@ -170,43 +170,62 @@ const InvoiceScreen: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
-                                <td className="px-6 py-5">
-                                    <div className="font-bold text-gray-900 dark:text-white">{order.service}</div>
-                                    {order.details && (
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 whitespace-pre-line leading-tight">
-                                            {order.details
-                                                .replace(/Taxa Roupa Íntima: R\$ 20,00\.? ?/g, '')
-                                                .replace(/Previsão: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
-                                                .replace(/Data do Pedido: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
-                                                .replace(/Extras: [^.]+\.? ?/g, '')
-                                                .trim()
-                                                .split(/\.\s+/)
-                                                .filter(Boolean)
-                                                .map(item => `- ${item}`)
-                                                .join('\n')}
-                                        </div>
-                                    )}
-                                </td>
-                                <td className="px-6 py-5 text-center text-gray-700 dark:text-gray-300">1</td>
-                                <div className="hidden">{/* Calculando valor do serviço base */}</div>
-                                <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">
-                                    R$ {(() => {
-                                        let baseVal = (order.value || 0) + (order.discount || 0);
-                                        if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
-                                        if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
-                                        return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                    })()}
-                                </td>
-                                <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">
-                                    R$ {(() => {
-                                        let baseVal = (order.value || 0) + (order.discount || 0);
-                                        if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
-                                        if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
-                                        return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-                                    })()}
-                                </td>
-                            </tr>
+                            {/* Show itemized services if available */}
+                            {order.orderItems && order.orderItems.length > 0 ? (
+                                order.orderItems.map((item, index) => (
+                                    <tr key={index} className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
+                                        <td className="px-6 py-5">
+                                            <div className="font-bold text-gray-900 dark:text-white">{item.service_name}</div>
+                                        </td>
+                                        <td className="px-6 py-5 text-center text-gray-700 dark:text-gray-300">{item.quantity}</td>
+                                        <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">
+                                            R$ {item.unit_price.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">
+                                            R$ {item.subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                // Fallback for old orders without order_items
+                                <tr className="bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-gray-700">
+                                    <td className="px-6 py-5">
+                                        <div className="font-bold text-gray-900 dark:text-white">{order.service}</div>
+                                        {order.details && (
+                                            <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 whitespace-pre-line leading-tight">
+                                                {order.details
+                                                    .replace(/Taxa Roupa Íntima: R\$ 20,00\.? ?/g, '')
+                                                    .replace(/Previsão: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+                                                    .replace(/Data do Pedido: \d{2}\/\d{2}\/\d{4}\.? ?/g, '')
+                                                    .replace(/Extras: [^.]+\.? ?/g, '')
+                                                    .trim()
+                                                    .split(/\.\s+/)
+                                                    .filter(Boolean)
+                                                    .map(item => `- ${item}`)
+                                                    .join('\n')}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-5 text-center text-gray-700 dark:text-gray-300">1</td>
+                                    <div className="hidden">{/* Calculando valor do serviço base */}</div>
+                                    <td className="px-6 py-5 text-right text-gray-700 dark:text-gray-300">
+                                        R$ {(() => {
+                                            let baseVal = (order.value || 0) + (order.discount || 0);
+                                            if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
+                                            if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
+                                            return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                        })()}
+                                    </td>
+                                    <td className="px-6 py-5 text-right font-semibold text-gray-900 dark:text-white">
+                                        R$ {(() => {
+                                            let baseVal = (order.value || 0) + (order.discount || 0);
+                                            if (order.extras) baseVal -= order.extras.reduce((acc, e) => acc + e.price, 0);
+                                            if (order.details.includes('Taxa Roupa Íntima: R$ 20,00')) baseVal -= 20;
+                                            return baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                        })()}
+                                    </td>
+                                </tr>
+                            )}
                             
                             {/* Tax Row */}
                             {order.details.includes('Taxa Roupa Íntima: R$ 20,00') && (

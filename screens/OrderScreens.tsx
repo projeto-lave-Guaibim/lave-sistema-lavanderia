@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
-import { Order, OrderStatus, Client } from '../types';
+import { Order, OrderStatus, Client, OrderItem } from '../types';
 import Header from '../components/Header';
 import { ClientModal } from './ClientScreens';
 import { openWhatsApp } from '../utils/whatsappUtils';
 import { orderService } from '../services/orderService';
+import { orderItemService } from '../services/orderItemService';
 import { clientService } from '../services/clientService';
 import { feeUtils } from '../utils/feeUtils';
 
@@ -149,6 +150,7 @@ export const NewOrderScreen: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [touristName, setTouristName] = useState('');
     const [touristContact, setTouristContact] = useState('');
+    const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -219,31 +221,91 @@ export const NewOrderScreen: React.FC = () => {
         setDiscount(next.toString());
     };
 
+    const saveCurrentService = () => {
+        if (!selectedService) return;
+
+        const serviceValue = calculateTotal();
+        let serviceName = selectedService.name;
+        let quantity = 1;
+        let unitPrice = serviceValue;
+
+        // Build service description
+        if (selectedService.type === 'kg') {
+            quantity = parseFloat(weight) || 0;
+            unitPrice = selectedService.price;
+            serviceName += ` (${kgCategory || 'Kg'})`;
+        } else {
+            quantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+            unitPrice = quantity > 0 ? serviceValue / quantity : serviceValue;
+        }
+
+        const newItem: OrderItem = {
+            service_name: serviceName,
+            quantity: quantity,
+            unit_price: unitPrice,
+            subtotal: serviceValue
+        };
+
+        setOrderItems(prev => [...prev, newItem]);
+
+        // Reset current service selection
+        setSelectedService(null);
+        setWeight('');
+        setSelectedItems([]);
+        setSelectedExtras([]);
+        setKgCategory('');
+        setShowIndividualItems(false);
+        setUnderwearTax(false);
+    };
+
+    const calculateTotalAllServices = () => {
+        const currentServiceTotal = calculateTotal();
+        const savedServicesTotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
+        return currentServiceTotal + savedServicesTotal - (parseFloat(discount) || 0);
+    };
+
     const handleSubmit = async () => {
-        if (!selectedClient || !selectedService) return;
+        if (!selectedClient) return;
         
         setSubmitting(true);
         try {
-            const totalValue = calculateTotal();
-
+            // Collect all services including the current one
+            let allItems = [...orderItems];
             
-            let itemsDescription = '';
-            if (selectedService.type === 'kg') {
-                itemsDescription = `${weight}kg${kgCategory ? ` (${kgCategory})` : ''}`;
-                if (selectedItems.length > 0) {
-                     const partsDesc = selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ');
-                     itemsDescription += `. Peças: ${partsDesc}`;
+            // Add current service if there is one
+            if (selectedService) {
+                const serviceValue = calculateTotal();
+                let serviceName = selectedService.name;
+                let quantity = 1;
+                let unitPrice = serviceValue;
+
+                if (selectedService.type === 'kg') {
+                    quantity = parseFloat(weight) || 0;
+                    unitPrice = selectedService.price;
+                    serviceName += ` (${kgCategory || 'Kg'})`;
+                } else {
+                    quantity = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+                    unitPrice = quantity > 0 ? serviceValue / quantity : serviceValue;
                 }
-            } else {
-                itemsDescription = selectedItems.map(i => `${i.quantity}x ${i.item.name}`).join(', ');
+
+                const currentItem: OrderItem = {
+                    service_name: serviceName,
+                    quantity: quantity,
+                    unit_price: unitPrice,
+                    subtotal: serviceValue
+                };
+                
+                allItems.push(currentItem);
+            }
+            
+            if (allItems.length === 0) {
+                alert('Adicione pelo menos um serviço');
+                setSubmitting(false);
+                return;
             }
 
-            const extrasDescription = selectedExtras.length > 0 
-                ? `Extras: ${selectedExtras.map(e => e.name).join(', ')}` 
-                : '';
+            const totalValue = allItems.reduce((sum, item) => sum + item.subtotal, 0) - (parseFloat(discount) || 0);
 
-            const taxDescription = underwearTax ? 'Taxa Roupa Íntima: R$ 20,00' : '';
-            
             // Format dates avoiding timezone issues
             const formatDate = (d: string) => {
                 const [y, m, day] = d.split('-');
@@ -254,9 +316,6 @@ export const NewOrderScreen: React.FC = () => {
             const orderDateDescription = orderDate ? `Data do Pedido: ${formatDate(orderDate)}` : '';
 
             const finalDetails = [
-                itemsDescription,
-                extrasDescription,
-                taxDescription,
                 deliveryDescription,
                 orderDateDescription,
                 details
@@ -270,16 +329,25 @@ export const NewOrderScreen: React.FC = () => {
             const newOrder: Order = {
                 id: 0,
                 client: { ...selectedClient, name: finalClientName },
-                service: selectedService.name,
+                service: `${allItems.length} serviço(s)`,
                 details: finalDetails,
                 value: totalValue,
                 status: OrderStatus.Pendente,
-                extras: selectedExtras,
+                extras: [],
                 discount: parseFloat(discount) || 0,
                 timestamp: new Date().toISOString()
             };
 
-            await orderService.create(newOrder);
+            const createdOrder = await orderService.create(newOrder);
+            
+            // Create order items
+            const itemsToCreate = allItems.map(item => ({
+                ...item,
+                order_id: createdOrder.id
+            }));
+            
+            await orderItemService.createMany(itemsToCreate);
+
             navigate('/orders');
         } catch (error: any) {
             console.error("Failed to create order", error);
@@ -621,13 +689,45 @@ export const NewOrderScreen: React.FC = () => {
 
             {step === 5 && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
+                    {/* Show saved services */}
+                    {orderItems.length > 0 && (
+                        <div className="mb-4 max-h-32 overflow-y-auto space-y-2">
+                            <p className="text-xs text-gray-500 mb-2">Serviços adicionados:</p>
+                            {orderItems.map((item, index) => (
+                                <div key={index} className="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                    <span className="text-gray-900 dark:text-white">{item.service_name} ({item.quantity})</span>
+                                    <span className="font-bold text-primary">R$ {item.subtotal.toFixed(2)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    
                     <div className="flex justify-between items-center mb-4">
                         <span className="text-gray-500">Total Final</span>
-                        <span className="text-3xl font-bold text-primary">R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="text-3xl font-bold text-primary">R$ {calculateTotalAllServices().toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <button onClick={handleSubmit} disabled={submitting} className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors">
-                        {submitting ? 'Salvando...' : 'Finalizar Pedido'}
-                    </button>
+                    
+                    <div className="space-y-2">
+                        {selectedService && (
+                            <button 
+                                onClick={() => {
+                                    saveCurrentService();
+                                    setStep(2);
+                                }} 
+                                className="w-full rounded-xl bg-gray-200 dark:bg-gray-700 h-12 text-gray-900 dark:text-white text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                <span className="material-symbols-outlined">add</span>
+                                Adicionar Outro Serviço
+                            </button>
+                        )}
+                        <button 
+                            onClick={handleSubmit} 
+                            disabled={submitting || (orderItems.length === 0 && !selectedService)} 
+                            className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors"
+                        >
+                            {submitting ? 'Salvando...' : 'Finalizar Pedido'}
+                        </button>
+                    </div>
                 </div>
             )}
             {showNewClientModal && (
@@ -907,11 +1007,25 @@ export const OrderDetailsScreen: React.FC = () => {
 
                         <div className="space-y-4">
                             <div className="flex justify-between items-start">
-                                <div>
+                                <div className="flex-1">
                                     <span className="text-gray-500 text-sm">Serviço</span>
                                     <p className="font-medium text-[#111418] dark:text-white">{order.service}</p>
+                                    
+                                    {/* Itemized Services List */}
+                                    {order.orderItems && order.orderItems.length > 0 && (
+                                        <div className="mt-3 space-y-2">
+                                            {order.orderItems.map((item, index) => (
+                                                <div key={index} className="flex justify-between items-center text-sm bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                                                    <span className="text-gray-700 dark:text-gray-300">
+                                                        {item.service_name} <span className="text-xs text-gray-500">({item.quantity}x)</span>
+                                                    </span>
+                                                    <span className="font-bold text-primary">R$ {item.subtotal.toFixed(2)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="text-right">
+                                <div className="text-right ml-4">
                                     <span className="text-gray-500 text-sm">Pagamento</span>
                                     <div className="flex flex-col items-end gap-1">
                                         {order.isPaid ? (

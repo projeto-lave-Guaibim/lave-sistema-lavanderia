@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
-import { Order } from '../types';
+import { Order, OrderItem } from '../types';
+import { orderItemService } from './orderItemService';
 
 export const orderService = {
     getAll: async (): Promise<Order[]> => {
@@ -10,29 +11,43 @@ export const orderService = {
 
         if (error) throw new Error(error.message);
 
-        return data.map((o: any) => ({
-            id: o.id,
-            service: o.service_type, 
-            details: o.description, 
-            payment_method: o.payment_method,
-            timestamp: new Date(o.created_at).toLocaleString('pt-BR'), 
-            status: o.status,
-            value: Number(o.value),
-            extras: o.extras || [],
-            discount: o.discount || 0,
-            isPaid: !!o.payment_method, // Paid if payment_method is set
-            fee: o.fee || 0,
-            netValue: o.net_value || 0, // Map from snake_case DB column
-            payment_date: o.payment_date,
-            feePercentage: o.fee_percentage || 0,
-            client: {
-                id: o.client_id,
-                name: o.client_name,
-                phone: '', 
-                tags: [],
-                memberSince: ''
+        // Fetch order items for all orders
+        const orders = await Promise.all(data.map(async (o: any) => {
+            // Try to get order items first
+            let orderItems: OrderItem[] = [];
+            try {
+                orderItems = await orderItemService.getByOrderId(o.id);
+            } catch (err) {
+                console.warn(`Could not fetch items for order ${o.id}`, err);
             }
+
+            return {
+                id: o.id,
+                service: o.service_type, 
+                details: o.description, 
+                payment_method: o.payment_method,
+                timestamp: new Date(o.created_at).toLocaleString('pt-BR'), 
+                status: o.status,
+                value: Number(o.value),
+                extras: o.extras || [],
+                discount: o.discount || 0,
+                isPaid: !!o.payment_method,
+                fee: o.fee || 0,
+                netValue: o.net_value || 0,
+                payment_date: o.payment_date,
+                feePercentage: o.fee_percentage || 0,
+                orderItems: orderItems.length > 0 ? orderItems : undefined, // Include items if available
+                client: {
+                    id: o.client_id,
+                    name: o.client_name,
+                    phone: '', 
+                    tags: [],
+                    memberSince: ''
+                }
+            };
         }));
+
+        return orders;
     },
 
     create: async (order: Order) => {
