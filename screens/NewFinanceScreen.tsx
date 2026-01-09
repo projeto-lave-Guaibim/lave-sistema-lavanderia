@@ -130,47 +130,46 @@ const NewFinanceScreen: React.FC = () => {
                             {/* Group Selection */}
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-2">Grupo</label>
-                                <div className="grid grid-cols-2 gap-2">
-                                    {getGroups().map(group => (
-                                        <button
-                                            key={group}
-                                            onClick={() => {
-                                                setSelectedGroup(group);
-                                                setSelectedCategory('');
-                                            }}
-                                            className={`p-3 rounded-lg border text-sm font-medium text-left transition-colors ${
-                                                selectedGroup === group
-                                                    ? 'bg-primary/10 border-primary text-primary'
-                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                            }`}
-                                        >
-                                            {group}
-                                        </button>
-                                    ))}
+                                <div className="relative">
+                                    <select
+                                        value={selectedGroup}
+                                        onChange={(e) => {
+                                            setSelectedGroup(e.target.value);
+                                            setSelectedCategory('');
+                                        }}
+                                        className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent pr-10"
+                                    >
+                                        <option value="">Selecione um grupo</option>
+                                        {getGroups().map(group => (
+                                            <option key={group} value={group}>{group}</option>
+                                        ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                        <span className="material-symbols-outlined">expand_more</span>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Subcategory Selection */}
-                            {selectedGroup && (
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-2">Categoria</label>
-                                    <div className="flex flex-wrap gap-2">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">Categoria</label>
+                                <div className="relative">
+                                    <select
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        disabled={!selectedGroup}
+                                        className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <option value="">{selectedGroup ? 'Selecione uma categoria' : 'Selecione um grupo primeiro'}</option>
                                         {getCategories().map((category: string) => (
-                                            <button
-                                                key={category}
-                                                onClick={() => setSelectedCategory(category)}
-                                                className={`px-4 py-2 rounded-full border text-sm transition-colors ${
-                                                    selectedCategory === category
-                                                        ? 'bg-primary text-white border-primary'
-                                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                                }`}
-                                            >
-                                                {category}
-                                            </button>
+                                            <option key={category} value={category}>{category}</option>
                                         ))}
+                                    </select>
+                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                        <span className="material-symbols-outlined">expand_more</span>
                                     </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
 
