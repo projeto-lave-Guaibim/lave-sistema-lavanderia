@@ -16,6 +16,8 @@ export const OrdersListScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('Todos');
     const [activeCategoryFilter, setActiveCategoryFilter] = useState('Todas');
+    const [clientSearch, setClientSearch] = useState('');
+    const [valueSearch, setValueSearch] = useState('');
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -36,7 +38,20 @@ export const OrdersListScreen: React.FC = () => {
     const filteredOrders = orders.filter(order => {
         const matchesStatus = activeFilter === 'Todos' || order.status === activeFilter;
         const matchesCategory = activeCategoryFilter === 'Todas' || order.service === activeCategoryFilter;
-        return matchesStatus && matchesCategory;
+        
+        const matchesClient = order.client.name.toLowerCase().includes(clientSearch.toLowerCase()) || 
+                              order.id.toString().includes(clientSearch); // Also search by Order ID
+
+        let matchesValue = true;
+        if (valueSearch) {
+            const searchVal = parseFloat(valueSearch.replace(',', '.'));
+            if (!isNaN(searchVal)) {
+                // Match exact value with small tolerance
+                matchesValue = Math.abs(order.value - searchVal) < 0.05;
+            }
+        }
+
+        return matchesStatus && matchesCategory && matchesClient && matchesValue;
     });
 
     // Get unique services for filter
@@ -73,7 +88,33 @@ export const OrdersListScreen: React.FC = () => {
                     </div>
                 }
             />
-            <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar items-center bg-white dark:bg-[#111821] shadow-sm z-10">
+            
+            {/* Search Filters */}
+            <div className="px-4 pt-3 pb-1 bg-white dark:bg-[#111821] flex gap-2">
+                <div className="flex-1 relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+                    <input 
+                        type="text" 
+                        placeholder="Nome ou Nº Pedido" 
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                    />
+                </div>
+                <div className="w-28 relative">
+                    <span className="text-gray-400 text-xs absolute left-2 top-1/2 -translate-y-1/2 font-bold">R$</span>
+                    <input 
+                        type="number" 
+                        placeholder="Valor" 
+                        value={valueSearch}
+                        onChange={(e) => setValueSearch(e.target.value)}
+                        className="w-full pl-7 pr-2 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                        step="0.01"
+                    />
+                </div>
+            </div>
+
+            <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar items-center bg-white dark:bg-[#111821] shadow-sm z-10 border-t border-gray-50 dark:border-gray-800/50">
                 {filters.map(filter => (
                     <button key={filter} onClick={() => setActiveFilter(filter)} className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${activeFilter === filter ? 'bg-primary text-white' : 'bg-[#f0f2f4] dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>
                         <p className={`text-sm font-medium leading-normal ${activeFilter !== filter && 'text-[#111418] dark:text-gray-300'}`}>{filter}</p>
