@@ -47,7 +47,8 @@ export const FINANCE_CATEGORIES = {
             'Passadoria',
             'Lavagem + Passadoria Kg',
             'Lavagem + Passadoria Peça',
-            'Serviços especiais'
+            'Serviços especiais',
+            'Venda de produtos'
         ],
         'Outros': [
             'Outros serviços'

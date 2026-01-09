@@ -190,16 +190,13 @@ const EditFinanceScreen: React.FC = () => {
                                             setSelectedGroup(e.target.value);
                                             setSelectedCategory('');
                                         }}
-                                        className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent pr-10"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                                     >
                                         <option value="">Selecione um grupo</option>
                                         {getGroups().map(group => (
                                             <option key={group} value={group}>{group}</option>
                                         ))}
                                     </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                        <span className="material-symbols-outlined">expand_more</span>
-                                    </div>
                                 </div>
                             </div>
 
@@ -211,16 +208,13 @@ const EditFinanceScreen: React.FC = () => {
                                         value={selectedCategory}
                                         onChange={(e) => setSelectedCategory(e.target.value)}
                                         disabled={!selectedGroup}
-                                        className="w-full appearance-none px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <option value="">{selectedGroup ? 'Selecione uma categoria' : 'Selecione um grupo primeiro'}</option>
                                         {getCategories().map((category: string) => (
                                             <option key={category} value={category}>{category}</option>
                                         ))}
                                     </select>
-                                    <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
-                                        <span className="material-symbols-outlined">expand_more</span>
-                                    </div>
                                 </div>
                             </div>
                         </div>
