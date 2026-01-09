@@ -10,27 +10,47 @@ export const financeService = {
 
         if (error) throw new Error(error.message);
 
-        return data.map((t: any) => ({
-            ...t,
-            amount: Number(t.amount),
-            date: new Date(t.date).toLocaleDateString('pt-BR'), 
-            paid: t.paid,
-            clientName: t.client_name,
-            icon: t.icon,
-            category: t.category,
-            group: t.group
-        }));
+        return data.map((t: any) => {
+            let group = t.group; // Try to get from column if it exists (future proof)
+            let category = t.category;
+
+            // If no group column but category has separator, split it
+            // Format: "Group :: Category"
+            if (!group && category && typeof category === 'string' && category.includes(' :: ')) {
+                const parts = category.split(' :: ');
+                if (parts.length === 2) {
+                    group = parts[0];
+                    category = parts[1];
+                }
+            }
+
+            return {
+                ...t,
+                amount: Number(t.amount),
+                date: new Date(t.date).toLocaleDateString('pt-BR'), 
+                paid: t.paid,
+                clientName: t.client_name,
+                icon: t.icon,
+                category: category,
+                group: group
+            };
+        });
     },
 
     create: async (transaction: Omit<Transaction, 'id'>) => {
+        // Combine group and category for storage since 'group' column might not exist
+        const categoryToSave = transaction.group && transaction.category
+            ? `${transaction.group} :: ${transaction.category}`
+            : transaction.category;
+
         const { data, error } = await supabase
             .from('finance')
             .insert([{
                 description: transaction.description,
                 amount: transaction.amount,
                 type: transaction.type,
-                category: transaction.category || null,
-                group: transaction.group || null,
+                category: categoryToSave || null,
+                // Do not send 'group' property to avoid schema error
                 date: transaction.date,
                 paid: transaction.paid,
                 client_name: transaction.clientName,
@@ -40,7 +60,7 @@ export const financeService = {
             .single();
 
         if (error) throw new Error(error.message);
-        return data;
+        return data; // The returned data might have the combined string, but getAll handles it
     },
 
     getById: async (id: string): Promise<Transaction | null> => {
@@ -55,6 +75,17 @@ export const financeService = {
             throw new Error(error.message);
         }
 
+        let group = data.group;
+        let category = data.category;
+
+        if (!group && category && typeof category === 'string' && category.includes(' :: ')) {
+            const parts = category.split(' :: ');
+            if (parts.length === 2) {
+                group = parts[0];
+                category = parts[1];
+            }
+        }
+
         return {
             ...data,
             amount: Number(data.amount),
@@ -62,20 +93,24 @@ export const financeService = {
             paid: data.paid,
             clientName: data.client_name,
             icon: data.icon,
-            category: data.category,
-            group: data.group
+            category: category,
+            group: group
         };
     },
 
     update: async (id: string, transaction: Omit<Transaction, 'id'>) => {
+        const categoryToSave = transaction.group && transaction.category
+            ? `${transaction.group} :: ${transaction.category}`
+            : transaction.category;
+
         const { data, error } = await supabase
             .from('finance')
             .update({
                 description: transaction.description,
                 amount: transaction.amount,
                 type: transaction.type,
-                category: transaction.category || null,
-                group: transaction.group || null,
+                category: categoryToSave || null,
+                // Do not send 'group' property
                 date: transaction.date,
                 paid: transaction.paid,
                 client_name: transaction.clientName,
