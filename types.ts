@@ -78,6 +78,8 @@ export interface Transaction {
   fee?: number;
   paid: boolean;
   icon: string;
+  category?: string;
+  group?: string;
 }
 
 export interface Service {

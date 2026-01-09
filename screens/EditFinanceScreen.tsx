@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TransactionType } from '../types';
 import { financeService } from '../services/financeService';
+import { FINANCE_CATEGORIES } from '../constants/financeCategories';
 
 const EditFinanceScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -10,6 +11,8 @@ const EditFinanceScreen: React.FC = () => {
     const [loading, setLoading] = useState(true);
     
     const [type, setType] = useState<TransactionType>(TransactionType.Despesa);
+    const [selectedGroup, setSelectedGroup] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState('');
@@ -33,6 +36,9 @@ const EditFinanceScreen: React.FC = () => {
                 setDescription(transaction.description);
                 setAmount(transaction.amount.toString());
                 
+                if (transaction.group) setSelectedGroup(transaction.group);
+                if (transaction.category) setSelectedCategory(transaction.category);
+                
                 // Convert date to YYYY-MM-DD format for input
                 if (transaction.date.includes('/')) {
                     const [d, m, y] = transaction.date.split('/');
@@ -52,24 +58,38 @@ const EditFinanceScreen: React.FC = () => {
         loadTransaction();
     }, [transactionId, navigate]);
 
+    // Reset categories when type changes (optional, but good UX if user switches type)
+    // Note: We need to be careful not to reset immediately on load, but only on user interaction if we tracked that better.
+    // For simplicity, we assume if type changes from what was loaded, we should probably reset unless it matches the group map.
+
     const handleSubmit = async () => {
-        if (!description.trim() || !amount || parseFloat(amount) <= 0) {
-            alert('Preencha todos os campos corretamente');
+        if (!amount || parseFloat(amount) <= 0) {
+            alert('Preencha um valor válido');
             return;
         }
 
         if (!transactionId) return;
 
+        // Ensure category is selected if user changed type or cleared it
+        if (!selectedCategory || !selectedGroup) {
+            alert('Selecione uma categoria');
+            return;
+        }
+
+        const finalDescription = description.trim() || selectedCategory;
+
         setSubmitting(true);
         try {
             const transaction = {
                 type,
-                description: description.trim(),
+                description: finalDescription,
                 clientName: '',
                 amount: parseFloat(amount),
                 date: date, // Keep ISO format YYYY-MM-DD
                 paid: true,
-                icon: type === TransactionType.Receita ? 'trending_up' : 'trending_down'
+                icon: type === TransactionType.Receita ? 'trending_up' : 'trending_down',
+                category: selectedCategory,
+                group: selectedGroup
             };
 
             await financeService.update(transactionId, transaction);
@@ -80,6 +100,21 @@ const EditFinanceScreen: React.FC = () => {
         } finally {
             setSubmitting(false);
         }
+    };
+
+    const getGroups = () => {
+        if (type === TransactionType.Receita) {
+            return Object.keys(FINANCE_CATEGORIES.REVENUE);
+        }
+        return Object.keys(FINANCE_CATEGORIES.EXPENSE);
+    };
+
+    const getCategories = () => {
+        if (!selectedGroup) return [];
+        if (type === TransactionType.Receita) {
+            return (FINANCE_CATEGORIES.REVENUE as any)[selectedGroup] || [];
+        }
+        return (FINANCE_CATEGORIES.EXPENSE as any)[selectedGroup] || [];
     };
 
     if (loading) {
@@ -108,7 +143,11 @@ const EditFinanceScreen: React.FC = () => {
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Tipo de Movimentação</label>
                         <div className="grid grid-cols-2 gap-3">
                             <button
-                                onClick={() => setType(TransactionType.Receita)}
+                                onClick={() => {
+                                    setType(TransactionType.Receita);
+                                    setSelectedGroup('');
+                                    setSelectedCategory('');
+                                }}
                                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
                                     type === TransactionType.Receita
                                         ? 'bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-400'
@@ -119,7 +158,11 @@ const EditFinanceScreen: React.FC = () => {
                                 <span className="font-bold">Receita</span>
                             </button>
                             <button
-                                onClick={() => setType(TransactionType.Despesa)}
+                                onClick={() => {
+                                    setType(TransactionType.Despesa);
+                                    setSelectedGroup('');
+                                    setSelectedCategory('');
+                                }}
                                 className={`flex items-center justify-center gap-2 p-4 rounded-xl border-2 transition-all ${
                                     type === TransactionType.Despesa
                                         ? 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-400'
@@ -132,6 +175,58 @@ const EditFinanceScreen: React.FC = () => {
                         </div>
                     </div>
 
+                    {/* Category Selection */}
+                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-gray-100 dark:border-gray-800">
+                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Classificação</label>
+                        
+                        <div className="grid gap-4">
+                            {/* Group Selection */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-2">Grupo</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {getGroups().map(group => (
+                                        <button
+                                            key={group}
+                                            onClick={() => {
+                                                setSelectedGroup(group);
+                                                setSelectedCategory('');
+                                            }}
+                                            className={`p-3 rounded-lg border text-sm font-medium text-left transition-colors ${
+                                                selectedGroup === group
+                                                    ? 'bg-primary/10 border-primary text-primary'
+                                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            {group}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Subcategory Selection */}
+                            {selectedGroup && (
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-2">Categoria</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        {getCategories().map((category: string) => (
+                                            <button
+                                                key={category}
+                                                onClick={() => setSelectedCategory(category)}
+                                                className={`px-4 py-2 rounded-full border text-sm transition-colors ${
+                                                    selectedCategory === category
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                {category}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Description */}
                     <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-gray-100 dark:border-gray-800">
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Descrição</label>
@@ -139,7 +234,7 @@ const EditFinanceScreen: React.FC = () => {
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder={type === TransactionType.Receita ? "Ex: Serviço extra, Venda de produto" : "Ex: Aluguel, Água, Luz, Salário"}
+                            placeholder="Descrição opcional (preenchida automaticamente com a categoria)"
                             className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent"
                             autoFocus
                         />
@@ -180,7 +275,7 @@ const EditFinanceScreen: React.FC = () => {
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1a222d] border-t border-gray-100 dark:border-gray-800 z-20">
                 <button
                     onClick={handleSubmit}
-                    disabled={submitting || !description.trim() || !amount || parseFloat(amount) <= 0}
+                    disabled={submitting || !selectedCategory || !amount || parseFloat(amount) <= 0}
                     className="w-full rounded-xl bg-primary h-14 text-white text-lg font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary-dark transition-colors"
                 >
                     {submitting ? (

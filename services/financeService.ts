@@ -16,7 +16,9 @@ export const financeService = {
             date: new Date(t.date).toLocaleDateString('pt-BR'), 
             paid: t.paid,
             clientName: t.client_name,
-            icon: t.icon
+            icon: t.icon,
+            category: t.category,
+            group: t.group
         }));
     },
 
@@ -27,7 +29,8 @@ export const financeService = {
                 description: transaction.description,
                 amount: transaction.amount,
                 type: transaction.type,
-                category: ((transaction as any).category) || null,
+                category: transaction.category || null,
+                group: transaction.group || null,
                 date: transaction.date,
                 paid: transaction.paid,
                 client_name: transaction.clientName,
@@ -58,7 +61,9 @@ export const financeService = {
             date: data.date, // Keep original format
             paid: data.paid,
             clientName: data.client_name,
-            icon: data.icon
+            icon: data.icon,
+            category: data.category,
+            group: data.group
         };
     },
 
@@ -69,7 +74,8 @@ export const financeService = {
                 description: transaction.description,
                 amount: transaction.amount,
                 type: transaction.type,
-                category: ((transaction as any).category) || null,
+                category: transaction.category || null,
+                group: transaction.group || null,
                 date: transaction.date,
                 paid: transaction.paid,
                 client_name: transaction.clientName,
