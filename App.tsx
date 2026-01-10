@@ -9,6 +9,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import DashboardScreen from './screens/DashboardScreen';
 import { ClientsListScreen } from './screens/ClientScreens';
 import { OrdersListScreen, NewOrderScreen, OrderDetailsScreen } from './screens/OrderScreens';
+import { TicketScreen } from './screens/TicketScreen';
 import { StockControlScreen, AddStockItemScreen, EditStockItemScreen } from './screens/StockScreen';
 import InvoiceScreen from './screens/InvoiceScreen';
 import { ServiceRegistryScreen } from './screens/ServiceRegistryScreen';
@@ -57,6 +58,7 @@ const App = () => {
                             <Route path="orders/new-v2" element={<NewOrderScreenV2 />} />
                             <Route path="orders/:orderId" element={<OrderDetailsScreen />} />
                             <Route path="orders/:orderId/invoice" element={<InvoiceScreen />} />
+                            <Route path="orders/:orderId/ticket" element={<TicketScreen />} />
                             <Route path="stock" element={<StockControlScreen />} />
                             <Route path="stock/new" element={<AddStockItemScreen />} />
                             <Route path="stock/edit/:itemId" element={<EditStockItemScreen />} />
