@@ -56,7 +56,7 @@ export const financeService = {
                 client_name: transaction.clientName,
                 icon: transaction.icon
             }])
-            .select()
+            .select('id, description, amount, type, category, date, paid, client_name, icon')
             .single();
 
         if (error) throw new Error(error.message);
@@ -117,7 +117,7 @@ export const financeService = {
                 icon: transaction.icon
             })
             .eq('id', id)
-            .select()
+            .select('id, description, amount, type, category, date, paid, client_name, icon')
             .single();
 
         if (error) throw new Error(error.message);
