@@ -188,12 +188,22 @@ export const TicketScreen: React.FC = () => {
                 </div>
             </div>
             
-            <button 
-                onClick={() => window.print()}
-                className="fixed bottom-4 right-4 bg-blue-600 text-white rounded-full p-4 shadow-lg no-print"
-            >
-                <span className="material-symbols-outlined">print</span>
-            </button>
+            <div className="fixed bottom-4 right-4 flex gap-3 no-print">
+                <button 
+                    onClick={() => window.close()}
+                    className="bg-gray-500 text-white rounded-full size-12 shadow-lg flex items-center justify-center hover:bg-gray-600 transition-colors"
+                    title="Fechar"
+                >
+                    <span className="material-symbols-outlined">close</span>
+                </button>
+                <button 
+                    onClick={() => window.print()}
+                    className="bg-blue-600 text-white rounded-full size-12 shadow-lg flex items-center justify-center hover:bg-blue-700 transition-colors"
+                    title="Imprimir"
+                >
+                    <span className="material-symbols-outlined">print</span>
+                </button>
+            </div>
         </div>
     );
 };
