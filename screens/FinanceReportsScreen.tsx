@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { financeService } from '../services/financeService';
+import { orderService } from '../services/orderService';
 import { generateFinanceReportPDF } from '../utils/financePdfGenerator';
 import { Transaction, TransactionType } from '../types';
 import Header from '../components/Header';
@@ -31,10 +32,45 @@ export const FinanceReportsScreen: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const data = await financeService.getAll();
-            setTransactions(data);
+            const [financeData, ordersData] = await Promise.all([
+                financeService.getAll(),
+                orderService.getAll()
+            ]);
+
+            // Convert Orders to Transactions
+            const orderTransactions: Transaction[] = ordersData.map(order => {
+                // Determine date: use timestamp or today fallback
+                let dateStr = new Date().toISOString().split('T')[0];
+                if (order.timestamp) {
+                    const d = new Date(order.timestamp);
+                    if (!isNaN(d.getTime())) {
+                        dateStr = d.toISOString().split('T')[0];
+                    }
+                }
+
+                return {
+                    id: `order-${order.id}`,
+                    type: TransactionType.Receita, // Orders are Revenue
+                    description: `Pedido #${order.id} - ${order.client.name}`,
+                    clientName: order.client.name,
+                    date: dateStr,
+                    amount: order.value || 0,
+                    paid: true, // Assuming orders listed are valid revenue
+                    icon: 'local_laundry_service',
+                    category: 'Serviços',
+                    group: 'Receitas Operacionais'
+                };
+            });
+
+            // Merge finance entries + orders
+            // Sort by date descending
+            const allData = [...financeData, ...orderTransactions].sort((a, b) => {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
+
+            setTransactions(allData);
         } catch (error) {
-            console.error("Erro ao carregar finanças", error);
+            console.error("Erro ao carregar dados financeiros e pedidos", error);
         } finally {
             setLoading(false);
         }
