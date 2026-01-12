@@ -15,6 +15,7 @@ const navItems = [
     { path: '/services', icon: 'dry_cleaning', label: 'Serviços' },
     { path: '/items', icon: 'checkroom', label: 'Peças' },
     { path: '/payments', icon: 'account_balance_wallet', label: 'Pagamentos' },
+    { path: '/finance/reports', icon: 'assessment', label: 'Relatórios' },
 ];
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
