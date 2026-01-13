@@ -225,6 +225,46 @@ export const generateFinanceReportPDF = (transactions: Transaction[], startDate:
         currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
+    // 3. Expense Breakdown by Category
+    const expenseByCategory = expenses.reduce((acc, curr) => {
+        // Use "Group - Category" for better clarity, or just Category
+        const key = curr.category || 'Sem Categoria'; 
+        acc[key] = (acc[key] || 0) + curr.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    if (Object.keys(expenseByCategory).length > 0) {
+        if (currentY + 60 > 280) { doc.addPage(); currentY = 20; }
+
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Detalhamento de Despesas por Categoria", 15, currentY);
+        currentY += 8;
+
+        const expenseRows = Object.entries(expenseByCategory)
+            .sort(([,a], [,b]) => b - a)
+            .map(([category, amount]) => [
+                category,
+                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                `${((amount / totalExpense) * 100).toFixed(1)}%`
+            ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Categoria de Despesa', 'Valor', '% do Total Despesa']],
+            body: expenseRows,
+            theme: 'grid',
+            headStyles: { fillColor: [192, 57, 43] }, // Dark Red
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 50, halign: 'right' },
+                2: { cellWidth: 35, halign: 'right' }
+            }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
 
     // Footer
     const pageCount = (doc as any).internal.getNumberOfPages();
