@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { financeService } from '../services/financeService';
 import { orderService } from '../services/orderService';
+import { clientService } from '../services/clientService';
 import { generateFinanceReportPDF } from '../utils/financePdfGenerator';
 import { Transaction, TransactionType } from '../types';
 import Header from '../components/Header';
@@ -32,10 +33,14 @@ export const FinanceReportsScreen: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
-            const [financeData, ordersData] = await Promise.all([
+            const [financeData, ordersData, clientsData] = await Promise.all([
                 financeService.getAll(),
-                orderService.getAll()
+                orderService.getAll(),
+                clientService.getAll(true) // Include hidden clients to ensure historical matching
             ]);
+
+            // Create client map for quick lookup
+            const clientMap = new Map(clientsData.map(c => [c.id, c]));
 
             // Convert Orders to Transactions
             const orderTransactions: Transaction[] = ordersData.map(order => {
@@ -48,6 +53,10 @@ export const FinanceReportsScreen: React.FC = () => {
                     }
                 }
 
+                // Get latest client type from live database, fallback to snapshot
+                const realClient = clientMap.get(order.client.id);
+                const clientType = realClient?.type || order.client.type || 'Pessoa Física';
+
                 return {
                     id: `order-${order.id}`,
                     type: TransactionType.Receita, // Orders are Revenue
@@ -59,7 +68,7 @@ export const FinanceReportsScreen: React.FC = () => {
                     icon: 'local_laundry_service',
                     category: order.service || 'Serviços Diversos', // Use actual service name
                     group: 'Receita de Serviços',
-                    clientType: order.client.type || 'Pessoa Física' // Default to PF if undefined
+                    clientType: clientType
                 };
             });
 
