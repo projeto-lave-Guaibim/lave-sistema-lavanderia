@@ -80,6 +80,7 @@ export interface Transaction {
   icon: string;
   category?: string;
   group?: string;
+  clientType?: string; // New field for reporting ('Pessoa Física' | 'Pessoa Jurídica')
 }
 
 export interface Service {

@@ -55,10 +55,11 @@ export const FinanceReportsScreen: React.FC = () => {
                     clientName: order.client.name,
                     date: dateStr,
                     amount: order.value || 0,
-                    paid: true, // Assuming orders listed are valid revenue
+                    paid: true,
                     icon: 'local_laundry_service',
-                    category: 'Serviços',
-                    group: 'Receitas Operacionais'
+                    category: order.service || 'Serviços Diversos', // Use actual service name
+                    group: 'Receita de Serviços',
+                    clientType: order.client.type || 'Pessoa Física' // Default to PF if undefined
                 };
             });
 

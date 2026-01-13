@@ -143,6 +143,89 @@ export const generateFinanceReportPDF = (transactions: Transaction[], startDate:
         currentY = (doc as any).lastAutoTable.finalY + 15;
     }
 
+    // --- BREAKDOWNS (New Sections) ---
+
+    // 1. Service Breakdown (Only for Orders/Services)
+    const serviceRevenue = revenues
+        .filter(r => r.group === 'Receita de Serviços' || r.category) // Filter primarily for services
+        .reduce((acc, curr) => {
+            const key = curr.category || 'Outros';
+            acc[key] = (acc[key] || 0) + curr.amount;
+            return acc;
+        }, {} as Record<string, number>);
+
+    if (Object.keys(serviceRevenue).length > 0) {
+        if (currentY + 60 > 280) { doc.addPage(); currentY = 20; } // Value estimation for page break
+
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Detalhamento de Faturamento por Serviço", 15, currentY);
+        currentY += 8;
+
+        const serviceRows = Object.entries(serviceRevenue)
+            .sort(([,a], [,b]) => b - a) // Sort by value desc
+            .map(([service, amount]) => [
+                service,
+                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                `${((amount / totalRevenue) * 100).toFixed(1)}%`
+            ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Serviço', 'Faturamento', '% do Total Receita']],
+            body: serviceRows,
+            theme: 'grid',
+            headStyles: { fillColor: [44, 62, 80] }, // Dark Blue
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 50, halign: 'right' },
+                2: { cellWidth: 35, halign: 'right' }
+            }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // 2. Client Type Breakdown
+    const clientTypeRevenue = revenues.reduce((acc, curr) => {
+        const key = curr.clientType || 'Não Classificado';
+        acc[key] = (acc[key] || 0) + curr.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    if (Object.keys(clientTypeRevenue).length > 0) {
+        if (currentY + 60 > 280) { doc.addPage(); currentY = 20; }
+
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Faturamento por Tipo de Cliente", 15, currentY);
+        currentY += 8;
+
+        const clientRows = Object.entries(clientTypeRevenue)
+            .sort(([,a], [,b]) => b - a)
+            .map(([type, amount]) => [
+                type === 'Turista' ? 'Turista / Visitante' : type, // Friendly name
+                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                `${((amount / totalRevenue) * 100).toFixed(1)}%`
+            ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Tipo de Cliente', 'Faturamento', '%']],
+            body: clientRows,
+            theme: 'grid',
+            headStyles: { fillColor: [142, 68, 173] }, // Purple
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 50, halign: 'right' },
+                2: { cellWidth: 35, halign: 'right' }
+            }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+
     // Footer
     const pageCount = (doc as any).internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
