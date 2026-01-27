@@ -389,19 +389,8 @@ export const NewOrderScreen: React.FC = () => {
             
             await orderItemService.createMany(itemsToCreate);
 
-            // Open ticket for automatic printing (requires browser configuration for true silence)
-            // Using a timeout to ensure state updates if any, although window.open is sync-ish
-            const width = 400;
-            const height = 600;
-            const left = (window.screen.width - width) / 2;
-            const top = (window.screen.height - height) / 2;
-            
-            // Open the ticket screen in a popup
-            window.open(
-                `#/orders/${createdOrder.id}/ticket`, 
-                'PrintTicket', 
-                `width=${width},height=${height},top=${top},left=${left},scrollbars=yes`
-            );
+            // Print functionality disabled by user request
+            // window.open(...) removed
 
             navigate('/orders');
         } catch (error: any) {

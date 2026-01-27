@@ -116,6 +116,46 @@ export const FinanceReportsScreen: React.FC = () => {
         generateFinanceReportPDF(filteredData, startDate, endDate);
     };
 
+    const handleExportCSV = () => {
+        if (filteredData.length === 0) {
+            alert("Não há dados para exportar no período selecionado.");
+            return;
+        }
+
+        // CSV Header
+        const headers = ["ID", "Data", "Descrição", "Tipo", "Categoria", "Grupo", "Cliente", "Tipo de Cliente", "Valor", "Pago"];
+        
+        // CSV Rows
+        const rows = filteredData.map(t => [
+            t.id,
+            new Date(t.date).toLocaleDateString('pt-BR'),
+            `"${t.description.replace(/"/g, '""')}"`, // Handle quotes in description
+            t.type,
+            `"${(t.category || '').replace(/"/g, '""')}"`,
+            t.group || '',
+            `"${(t.clientName || '').replace(/"/g, '""')}"`,
+            t.clientType || '',
+            t.amount.toString().replace('.', ','), // Brazilian decimal format
+            t.paid ? "Sim" : "Não"
+        ]);
+
+        // Combine
+        const csvContent = [
+            headers.join(';'), // Use ; for Excel compatibility in BR region
+            ...rows.map(row => row.join(';'))
+        ].join('\n');
+
+        // Create download link
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel UTF-8
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Relatorio_Financeiro_${startDate}_${endDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Calculate totals for preview
     const totalRevenue = filteredData
         .filter(t => t.type === TransactionType.Receita)
@@ -175,13 +215,22 @@ export const FinanceReportsScreen: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <button 
-                    onClick={handleExportPDF}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/30 transition-all"
-                >
-                    <span className="material-symbols-outlined">description</span>
-                    Baixar Relatório em PDF
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <button 
+                        onClick={handleExportPDF}
+                        className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/30 transition-all"
+                    >
+                        <span className="material-symbols-outlined">description</span>
+                        Baixar Relatório em PDF
+                    </button>
+                    <button 
+                        onClick={handleExportCSV}
+                        className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-600/30 transition-all"
+                    >
+                        <span className="material-symbols-outlined">table_view</span>
+                        Baixar Planilha (CSV)
+                    </button>
+                </div>
 
                 {/* Preview List (Reduced) */}
                 <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
