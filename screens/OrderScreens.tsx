@@ -68,20 +68,48 @@ export const OrdersListScreen: React.FC = () => {
         }
     };
 
-    const handleExportRPS = () => {
-        // Filter orders that have valid client documents
-        const batchOrders = filteredOrders.filter(o => o.client.document && o.client.document.replace(/\D/g, '').length > 0);
-        
-        if (batchOrders.length === 0) {
-            alert("Nenhum pedido na lista atual possui cliente com CPF/CNPJ. Filtre os pedidos ou cadastre os documentos.");
-            return;
-        }
+    const handleExportRPS = async () => {
+        setLoading(true);
+        try {
+            // 1. Get filtered orders
+            const startingOrders = filteredOrders;
 
-        if(!confirm(`Deseja gerar um lote de RPS para ${batchOrders.length} pedidos com CPF/CNPJ?`)) return;
-        
-        const batchId = Math.floor(Date.now() / 1000);
-        const xml = generateRPSXML(batchOrders, batchId);
-        downloadRPS(xml, batchId);
+            // 2. Fetch fresh client data to ensure we have latest CPF/CNPJ
+            const allClients = await clientService.getAll();
+            const clientMap = new Map(allClients.map(c => [c.id, c]));
+
+            // 3. Enrich orders with fresh client data
+            const enrichedOrders = startingOrders.map(order => {
+                const freshClient = clientMap.get(order.client.id);
+                if (freshClient) {
+                    return { ...order, client: freshClient };
+                }
+                return order;
+            });
+
+            // 4. Filter orders that have valid client documents
+            const batchOrders = enrichedOrders.filter(o => 
+                o.client.document && o.client.document.replace(/\D/g, '').length >= 11
+            );
+            
+            if (batchOrders.length === 0) {
+                alert("Nenhum pedido na lista filtrada possui cliente com CPF/CNPJ válido (11+ dígitos). Atualize o cadastro dos clientes e tente novamente.");
+                return;
+            }
+
+            if(!confirm(`Deseja gerar um lote de RPS para ${batchOrders.length} pedidos com CPF/CNPJ?`)) return;
+            
+            const batchId = Math.floor(Date.now() / 1000);
+            // 5. Generate XML with enriched data
+            const xml = generateRPSXML(batchOrders, batchId);
+            downloadRPS(xml, batchId);
+
+        } catch (error) {
+            console.error("Erro ao exportar RPS", error);
+            alert("Erro ao gerar arquivo de exportação.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

@@ -56,7 +56,7 @@ export const generateRPSXML = (orders: Order[], batchNumber: number) => {
                         <IssRetido>2</IssRetido>
                         <ItemListaServico>${COMPANY_CONFIG.ITEM_LISTA_SERVICO}</ItemListaServico>
                         <CodigoTributacaoMunicipio>${COMPANY_CONFIG.COD_TRIBUTACAO_MUNICIPIO}</CodigoTributacaoMunicipio>
-                        <Discriminacao>${order.service} - ${order.details.replace(/[<>]/g, '')}</Discriminacao>
+                        <Discriminacao>${order.service} - ${(order.details || 'Serviços de Lavanderia').replace(/[<>]/g, '')}</Discriminacao>
                         <CodigoMunicipio>2932603</CodigoMunicipio>
                     </Servico>
                     <Tomador>
