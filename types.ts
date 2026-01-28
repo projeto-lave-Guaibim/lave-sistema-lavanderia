@@ -21,6 +21,13 @@ export interface Client {
   document?: string; // CPF or CNPJ
   notes?: string;
   isHidden?: boolean;
+  // NFS-e required address fields
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  cityCode?: string;
+  state?: string;
 }
 
 export interface Order {

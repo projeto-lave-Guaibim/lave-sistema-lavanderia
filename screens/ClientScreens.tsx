@@ -155,9 +155,40 @@ export const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuc
         email: client?.email || '',
         document: client?.document || '',
         notes: client?.notes || '',
-        tags: client?.tags || [] as string[]
+        tags: client?.tags || [] as string[],
+        zipCode: client?.zipCode || '',
+        street: client?.street || '',
+        number: client?.number || '',
+        neighborhood: client?.neighborhood || '',
+        cityCode: client?.cityCode || '2932603', // Default Valença-BA
+        state: client?.state || 'BA'
     });
     const [submitting, setSubmitting] = useState(false);
+    const [loadingCep, setLoadingCep] = useState(false);
+
+    const handleCepBlur = async () => {
+        const cep = formData.zipCode.replace(/\D/g, '');
+        if (cep.length === 8) {
+            setLoadingCep(true);
+            try {
+                const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+                const data = await response.json();
+                if (!data.erro) {
+                    setFormData(prev => ({
+                        ...prev,
+                        street: data.logradouro,
+                        neighborhood: data.bairro,
+                        state: data.uf,
+                        cityCode: data.ibge
+                    }));
+                }
+            } catch (error) {
+                console.error("Erro ao buscar CEP", error);
+            } finally {
+                setLoadingCep(false);
+            }
+        }
+    };
 
     const handleSubmit = async () => {
         if (!formData.name) return alert("Nome é obrigatório");
@@ -190,24 +221,31 @@ export const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuc
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
                     <div>
                         <h3 className="text-xl font-bold text-[#111418] dark:text-white">{client ? 'Editar Cliente' : 'Adicionar Cliente'}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Preencha os dados do cliente para manter seu cadastro atualizado.</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Preencha os dados completos para emissão de Nota Fiscal.</p>
                     </div>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 bg-gray-100 dark:bg-gray-800 rounded-full p-1"><span className="material-symbols-outlined text-xl">close</span></button>
                 </div>
                 
                 <div className="p-6 space-y-4 overflow-y-auto">
+                    {/* Basic Info */}
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Nome completo / Razão social</label>
                         <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" placeholder="Digite o nome do cliente" />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tipo de cliente</label>
-                        <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
-                            <option value="Pessoa Física">Pessoa Física</option>
-                            <option value="Pessoa Jurídica">Pessoa Jurídica</option>
-                            <option value="Turista">Turista</option>
-                        </select>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                            <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value as any})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
+                                <option value="Pessoa Física">Pessoa Física</option>
+                                <option value="Pessoa Jurídica">Pessoa Jurídica</option>
+                                <option value="Turista">Turista</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{formData.type === 'Pessoa Jurídica' ? 'CNPJ' : 'CPF'}</label>
+                            <input type="text" value={formData.document} onChange={e => setFormData({...formData, document: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" placeholder="Somente números" />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -221,14 +259,59 @@ export const ClientModal: React.FC<{ client?: Client, onClose: () => void, onSuc
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">{formData.type === 'Pessoa Jurídica' ? 'CNPJ' : 'CPF'}</label>
-                        <input type="text" value={formData.document} onChange={e => setFormData({...formData, document: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" placeholder={formData.type === 'Pessoa Jurídica' ? '00.000.000/0000-00' : '000.000.000-00'} />
+                    {/* Address Section */}
+                    <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                        <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Endereço (Obrigatório p/ NF)</p>
+                        
+                        <div className="grid grid-cols-3 gap-4 mb-3">
+                            <div className="col-span-1">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">CEP</label>
+                                <div className="relative">
+                                    <input 
+                                        type="text" 
+                                        value={formData.zipCode} 
+                                        onChange={e => setFormData({...formData, zipCode: e.target.value})} 
+                                        onBlur={handleCepBlur}
+                                        className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" 
+                                        placeholder="00000-000" 
+                                    />
+                                    {loadingCep && <span className="absolute right-3 top-3 material-symbols-outlined animate-spin text-primary text-sm">progress_activity</span>}
+                                </div>
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Rua / Logradouro</label>
+                                <input type="text" value={formData.street} onChange={e => setFormData({...formData, street: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-4 mb-3">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Número</label>
+                                <input type="text" value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Bairro</label>
+                                <input type="text" value={formData.neighborhood} onChange={e => setFormData({...formData, neighborhood: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" />
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Cidade</label>
+                                <div className="px-4 py-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500 text-sm">
+                                    {formData.cityCode === '2932603' ? 'Valença' : 'Outra'} (Cód: {formData.cityCode})
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">UF</label>
+                                <input type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary" />
+                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Observações</label>
-                        <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary min-h-[100px]" placeholder="Preferências de entrega, instruções adicionais..."></textarea>
+                        <textarea value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-[#111418] dark:text-white focus:ring-primary focus:border-primary min-h-[60px]" placeholder="Preferências de entrega..."></textarea>
                     </div>
                 </div>
 

@@ -18,9 +18,16 @@ export const clientService = {
         
         return (data || []).map((client: any) => ({
             ...client,
-            phone: client.mobile, // Map mobile from DB to phone for frontend
+            phone: client.mobile,
             tags: client.tags || [],
-            isHidden: client.is_hidden || false
+            isHidden: client.is_hidden || false,
+            // Map Address Fields
+            zipCode: client.zip_code,
+            street: client.street,
+            number: client.number,
+            neighborhood: client.neighborhood,
+            cityCode: client.city_code, // IBGE
+            state: client.state
         }));
     },
 
@@ -33,9 +40,15 @@ export const clientService = {
                 email: client.email,
                 document: client.document,
                 type: client.type,
-                address: '',
                 notes: client.notes,
-                tags: client.tags
+                tags: client.tags,
+                // New Fields
+                zip_code: client.zipCode,
+                street: client.street,
+                number: client.number,
+                neighborhood: client.neighborhood,
+                city_code: client.cityCode,
+                state: client.state
             }])
             .select()
             .single();
@@ -45,7 +58,13 @@ export const clientService = {
         return {
             ...data,
             phone: data.mobile,
-            tags: data.tags || []
+            tags: data.tags || [],
+            zipCode: data.zip_code,
+            street: data.street,
+            number: data.number,
+            neighborhood: data.neighborhood,
+            cityCode: data.city_code,
+            state: data.state
         };
     },
 
@@ -59,7 +78,14 @@ export const clientService = {
                 document: client.document,
                 type: client.type,
                 notes: client.notes,
-                tags: client.tags
+                tags: client.tags,
+                // New Fields
+                zip_code: client.zipCode,
+                street: client.street,
+                number: client.number,
+                neighborhood: client.neighborhood,
+                city_code: client.cityCode,
+                state: client.state
             })
             .eq('id', client.id)
             .select()
@@ -70,7 +96,13 @@ export const clientService = {
         return {
             ...data,
             phone: data.mobile,
-            tags: data.tags || []
+            tags: data.tags || [],
+            zipCode: data.zip_code,
+            street: data.street,
+            number: data.number,
+            neighborhood: data.neighborhood,
+            cityCode: data.city_code,
+            state: data.state
         };
     },
 

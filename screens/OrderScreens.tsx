@@ -7,6 +7,7 @@ import { openWhatsApp } from '../utils/whatsappUtils';
 import { orderService } from '../services/orderService';
 import { orderItemService } from '../services/orderItemService';
 import { clientService } from '../services/clientService';
+import { generateRPSXML, downloadRPS } from '../utils/rpsGenerator';
 import { feeUtils } from '../utils/feeUtils';
 
 export const OrdersListScreen: React.FC = () => {
@@ -67,6 +68,22 @@ export const OrdersListScreen: React.FC = () => {
         }
     };
 
+    const handleExportRPS = () => {
+        // Filter orders that have valid client documents
+        const batchOrders = filteredOrders.filter(o => o.client.document && o.client.document.replace(/\D/g, '').length > 0);
+        
+        if (batchOrders.length === 0) {
+            alert("Nenhum pedido na lista atual possui cliente com CPF/CNPJ. Filtre os pedidos ou cadastre os documentos.");
+            return;
+        }
+
+        if(!confirm(`Deseja gerar um lote de RPS para ${batchOrders.length} pedidos com CPF/CNPJ?`)) return;
+        
+        const batchId = Math.floor(Date.now() / 1000);
+        const xml = generateRPSXML(batchOrders, batchId);
+        downloadRPS(xml, batchId);
+    };
+
     return (
         <>
             <Header 
@@ -74,6 +91,14 @@ export const OrdersListScreen: React.FC = () => {
                 onMenuClick={toggleSidebar}
                 rightActions={
                     <div className="flex items-center gap-2">
+                         <button 
+                            onClick={handleExportRPS}
+                            className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg p-2 transition-colors"
+                            title="Exportar Lote RPS (Nota Fiscal)"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+                        </button>
+
                         <select 
                             value={activeCategoryFilter}
                             onChange={(e) => setActiveCategoryFilter(e.target.value)}
