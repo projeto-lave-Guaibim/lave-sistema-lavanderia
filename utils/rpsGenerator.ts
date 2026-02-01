@@ -25,13 +25,18 @@ export const generateRPSXML = (orders: Order[], batchNumber: number) => {
         if (!order.client.document) return; // Pula se não tiver CPF/CNPJ
 
         const rpsNumber = order.id; // Usando ID do pedido como número do RPS (Provisório)
-        const date = new Date(order.timestamp).toISOString().split('T')[0]; // YYYY-MM-DD
+        let date;
+        try {
+            date = new Date(order.timestamp || Date.now()).toISOString().split('T')[0];
+        } catch (e) {
+            date = new Date().toISOString().split('T')[0]; // Fallback para hoje
+        }
         const value = order.value || 0;
         const issValue = value * COMPANY_CONFIG.ALIQUOTA;
 
-        // Limpa formatação CPF/CNPJ
-        const cleanDoc = order.client.document.replace(/\D/g, '');
-        const cleanZip = order.client.zipCode ? order.client.zipCode.replace(/\D/g, '') : '';
+        // Limpa formatação CPF/CNPJ com segurança
+        const cleanDoc = (order.client.document || '').replace(/\D/g, '');
+        const cleanZip = (order.client.zipCode || '').replace(/\D/g, '');
 
         // Formato ABRASF Simplificado
         xml += `

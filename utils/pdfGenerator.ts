@@ -137,18 +137,33 @@ export const generateOrderPDF = async (order: Order) => {
     
     // Parse Dates
     // Creation Date (Prioritize "Data do Pedido" from details, else timestamp, else today)
-    let creationDate = new Date();
+    // Parse Dates
+    // Creation Date: Use order details date OR order timestamp. Never use current date as default.
+    let creationDate: Date | null = null;
     
+    // 1. Try to get "Data do Pedido" from details
     const orderDateMatch = order.details.match(/Data do Pedido: (\d{2}\/\d{2}\/\d{4})/);
     if (orderDateMatch) {
-        // Parse dd/mm/yyyy
         const [day, month, year] = orderDateMatch[1].split('/').map(Number);
         creationDate = new Date(year, month - 1, day);
-    } else if (order.timestamp) {
-        const parsedDate = new Date(order.timestamp);
-        if (!isNaN(parsedDate.getTime())) {
-            creationDate = parsedDate;
+    } 
+    // 2. Fallback to order.timestamp (handling "dd/mm/yyyy, hh:mm:ss" or ISO)
+    else if (order.timestamp) {
+        if (order.timestamp.includes('/')) {
+            // Assume pt-BR format: dd/mm/yyyy ...
+            const [datePart] = order.timestamp.split(','); // "30/12/2025" or "30/12/2025 10:00"
+            const cleanDate = datePart.trim().split(' ')[0]; // ensure just the date
+            const [day, month, year] = cleanDate.split('/').map(Number);
+            creationDate = new Date(year, month - 1, day);
+        } else {
+            // Assume ISO or other standard format
+            creationDate = new Date(order.timestamp);
         }
+    }
+    
+    // 3. Last resort: Today (only if everything else fails, but try to avoid)
+    if (!creationDate || isNaN(creationDate.getTime())) {
+        creationDate = new Date();
     }
     
     // Delivery Date Parsing from details

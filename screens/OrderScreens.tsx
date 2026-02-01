@@ -8,6 +8,7 @@ import { orderService } from '../services/orderService';
 import { orderItemService } from '../services/orderItemService';
 import { clientService } from '../services/clientService';
 import { generateRPSXML, downloadRPS } from '../utils/rpsGenerator';
+import { generateOrdersCSV, downloadCSV } from '../utils/csvGenerator';
 import { feeUtils } from '../utils/feeUtils';
 
 export const OrdersListScreen: React.FC = () => {
@@ -112,6 +113,17 @@ export const OrdersListScreen: React.FC = () => {
         }
     };
 
+    const handleExportReport = () => {
+        if (filteredOrders.length === 0) {
+            alert("Não há pedidos na lista para exportar.");
+            return;
+        }
+        
+        const csv = generateOrdersCSV(filteredOrders);
+        const fileName = `Relatorio_Contabilidade_Lave_${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.csv`;
+        downloadCSV(csv, fileName);
+    };
+
     return (
         <>
             <Header 
@@ -119,6 +131,15 @@ export const OrdersListScreen: React.FC = () => {
                 onMenuClick={toggleSidebar}
                 rightActions={
                     <div className="flex items-center gap-2">
+                        {/* Botão Relatório Contábil (CSV) */}
+                         <button 
+                            onClick={handleExportReport}
+                            className="bg-green-100 hover:bg-green-200 dark:bg-green-900/40 dark:hover:bg-green-900/60 text-green-700 dark:text-green-300 rounded-lg p-2 transition-colors flex items-center gap-1"
+                            title="Exportar Relatório Geral para Contabilidade (Excel)"
+                        >
+                            <span className="material-symbols-outlined text-[20px]">table_view</span>
+                        </button>
+
                          <button 
                             onClick={handleExportRPS}
                             className="bg-blue-100 hover:bg-blue-200 dark:bg-blue-900/40 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg p-2 transition-colors"
@@ -305,8 +326,7 @@ export const NewOrderScreen: React.FC = () => {
         total += selectedExtras.reduce((acc, curr) => acc + curr.price, 0);
         if (underwearTax) total += 20;
 
-        const discountAmount = parseFloat(discount) || 0;
-        return Math.max(0, total - discountAmount);
+        return total;
     };
 
     const handleDiscountChange = (delta: number) => {
