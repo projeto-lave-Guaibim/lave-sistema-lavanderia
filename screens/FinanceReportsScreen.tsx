@@ -46,12 +46,26 @@ export const FinanceReportsScreen: React.FC = () => {
             // Convert Orders to Transactions
             const orderTransactions: Transaction[] = ordersData.map(order => {
                 // Determine date: use timestamp or today fallback
-                let dateStr = new Date().toISOString().split('T')[0];
+                // Determine date: use timestamp EXACTLY as in database (created_at)
+                let dateStr = "";
                 if (order.timestamp) {
-                    const d = new Date(order.timestamp);
-                    if (!isNaN(d.getTime())) {
-                        dateStr = d.toISOString().split('T')[0];
+                    // orderService.getAll returns timestamp as .toLocaleString('pt-BR') which is "dd/mm/yyyy hh:mm:ss" OR "dd/mm/yyyy, hh:mm:ss"
+                    if (order.timestamp.includes('/')) {
+                       // Parse "30/12/2025 ..." -> "2025-12-30" for input[type='date'] compatibility
+                       const datePart = order.timestamp.split(',')[0].trim().split(' ')[0]; // Get "30/12/2025"
+                       const [day, month, year] = datePart.split('/');
+                       if (day && month && year) {
+                           dateStr = `${year}-${month}-${day}`;
+                       }
+                    } else if (order.timestamp.includes('-')) {
+                        // ISO Format fallback
+                        dateStr = order.timestamp.split('T')[0];
                     }
+                }
+                
+                // Final fallback only if parsing failed completely
+                if (!dateStr || dateStr.length !== 10) {
+                     dateStr = new Date().toISOString().split('T')[0];
                 }
 
                 // Get latest client type from live database, fallback to snapshot
@@ -59,10 +73,22 @@ export const FinanceReportsScreen: React.FC = () => {
                 const clientType = realClient?.type || order.client.type || 'Pessoa Física';
 
                 // Calculate Fees
+                // Calculate Fees
                 const grossAmount = order.value || 0;
-                const feesConfig = feeUtils.getFees();
-                const netAmount = feeUtils.calculateNetValue(grossAmount, order.payment_method || '', feesConfig);
-                const feeVal = parseFloat((grossAmount - netAmount).toFixed(2));
+                let feeVal = 0;
+                let netAmount = 0;
+
+                // Priority: Use stored values (Historical Accuracy)
+                // If the order has a stored fee/netValue (meaning it was paid and saved with specific rates), use it.
+                if (typeof order.fee === 'number' && (order.fee > 0 || order.netValue)) {
+                    feeVal = order.fee;
+                    netAmount = order.netValue || (grossAmount - feeVal);
+                } else {
+                    // Fallback: Calculate dynamically (for old orders or if data missing)
+                    const feesConfig = feeUtils.getFees();
+                    netAmount = feeUtils.calculateNetValue(grossAmount, order.payment_method || '', feesConfig);
+                    feeVal = parseFloat((grossAmount - netAmount).toFixed(2));
+                }
 
                 return {
                     id: `order-${order.id}`,
