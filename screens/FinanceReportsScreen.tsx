@@ -4,6 +4,7 @@ import { financeService } from '../services/financeService';
 import { orderService } from '../services/orderService';
 import { clientService } from '../services/clientService';
 import { generateFinanceReportPDF } from '../utils/financePdfGenerator';
+import { feeUtils } from '../utils/feeUtils';
 import { Transaction, TransactionType } from '../types';
 import Header from '../components/Header';
 
@@ -57,16 +58,24 @@ export const FinanceReportsScreen: React.FC = () => {
                 const realClient = clientMap.get(order.client.id);
                 const clientType = realClient?.type || order.client.type || 'Pessoa Física';
 
+                // Calculate Fees
+                const grossAmount = order.value || 0;
+                const feesConfig = feeUtils.getFees();
+                const netAmount = feeUtils.calculateNetValue(grossAmount, order.payment_method || '', feesConfig);
+                const feeVal = parseFloat((grossAmount - netAmount).toFixed(2));
+
                 return {
                     id: `order-${order.id}`,
                     type: TransactionType.Receita, // Orders are Revenue
                     description: `Pedido #${order.id} - ${order.client.name}`,
                     clientName: order.client.name,
                     date: dateStr,
-                    amount: order.value || 0,
+                    amount: grossAmount, // Store Gross as main amount for compatibility
+                    fee: feeVal,
+                    netValue: netAmount,
                     paid: true,
                     icon: 'local_laundry_service',
-                    category: order.service || 'Serviços Diversos', // Use actual service name
+                    category: order.service || 'Serviços Diversos', 
                     group: 'Receita de Serviços',
                     clientType: clientType
                 };
@@ -123,21 +132,29 @@ export const FinanceReportsScreen: React.FC = () => {
         }
 
         // CSV Header
-        const headers = ["ID", "Data", "Descrição", "Tipo", "Categoria", "Grupo", "Cliente", "Tipo de Cliente", "Valor", "Pago"];
+        const headers = ["ID", "Data", "Descrição", "Tipo", "Categoria", "Grupo", "Cliente", "Tipo de Cliente", "Valor Bruto", "Taxas", "Valor Líquido", "Pago"];
         
         // CSV Rows
-        const rows = filteredData.map(t => [
-            t.id,
-            new Date(t.date).toLocaleDateString('pt-BR'),
-            `"${t.description.replace(/"/g, '""')}"`, // Handle quotes in description
-            t.type,
-            `"${(t.category || '').replace(/"/g, '""')}"`,
-            t.group || '',
-            `"${(t.clientName || '').replace(/"/g, '""')}"`,
-            t.clientType || '',
-            t.amount.toString().replace('.', ','), // Brazilian decimal format
-            t.paid ? "Sim" : "Não"
-        ]);
+        const rows = filteredData.map(t => {
+            const gross = t.amount;
+            const fee = t.fee || 0;
+            const net = t.amount - fee;
+            
+            return [
+                t.id,
+                new Date(t.date).toLocaleDateString('pt-BR'),
+                `"${t.description.replace(/"/g, '""')}"`,
+                t.type,
+                `"${(t.category || '').replace(/"/g, '""')}"`,
+                t.group || '',
+                `"${(t.clientName || '').replace(/"/g, '""')}"`,
+                t.clientType || '',
+                gross.toString().replace('.', ','),
+                fee.toString().replace('.', ','),
+                net.toString().replace('.', ','),
+                t.paid ? "Sim" : "Não"
+            ];
+        });
 
         // Combine
         const csvContent = [
@@ -196,21 +213,71 @@ export const FinanceReportsScreen: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-xl border border-green-100 dark:border-green-800">
-                        <p className="text-sm text-green-600 dark:text-green-400 font-medium">Receitas</p>
-                        <p className="text-2xl font-bold text-green-700 dark:text-green-300">R$ {totalRevenue.toFixed(2)}</p>
+                {/* Summary Cards - Premium Style */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Net Profit Card - Highlighted (Solid Primary) */}
+                    <div className="md:col-span-1 bg-primary text-white p-6 rounded-2xl shadow-xl shadow-primary/20 flex flex-col justify-between relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
+                            <span className="material-symbols-outlined text-9xl">account_balance_wallet</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2 mb-4 relative z-10">
+                            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                                <span className="material-symbols-outlined text-xl">account_balance_wallet</span>
+                            </div>
+                            <span className="font-medium text-white/90 text-sm tracking-wide">LUCRO LÍQUIDO</span>
+                        </div>
+
+                        <div className="relative z-10">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-2xl font-medium text-white/80">R$</span>
+                                <span className="text-4xl font-bold tracking-tight">{(totalRevenue - totalExpense).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                            <p className="text-white/60 text-xs mt-2 font-medium">
+                                No período selecionado
+                            </p>
+                        </div>
                     </div>
-                    <div className="bg-red-50 dark:bg-red-900/10 p-4 rounded-xl border border-red-100 dark:border-red-800">
-                        <p className="text-sm text-red-600 dark:text-red-400 font-medium">Despesas</p>
-                        <p className="text-2xl font-bold text-red-700 dark:text-red-300">R$ {totalExpense.toFixed(2)}</p>
+
+                    {/* Revenue Card - White/Clean */}
+                    <div className="bg-white dark:bg-surface-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between group hover:border-green-200 transition-colors">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-600 dark:text-green-400">
+                                    <span className="material-symbols-outlined text-xl">trending_up</span>
+                                </div>
+                                <span className="font-medium text-gray-500 text-sm tracking-wide">RECEITAS</span>
+                            </div>
+                            <span className="material-symbols-outlined text-green-200 text-4xl group-hover:text-green-500/20 transition-colors">payments</span>
+                        </div>
+                        <div>
+                            <span className="text-3xl font-bold text-gray-800 dark:text-white">R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                                <div className="bg-green-500 h-full rounded-full" style={{ width: '100%' }}></div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
-                        <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Saldo</p>
-                        <p className={`text-2xl font-bold ${(totalRevenue - totalExpense) >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-600'}`}>
-                            R$ {(totalRevenue - totalExpense).toFixed(2)}
-                        </p>
+
+                    {/* Expense Card - White/Clean */}
+                    <div className="bg-white dark:bg-surface-dark p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col justify-between group hover:border-red-200 transition-colors">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400">
+                                    <span className="material-symbols-outlined text-xl">trending_down</span>
+                                </div>
+                                <span className="font-medium text-gray-500 text-sm tracking-wide">DESPESAS</span>
+                            </div>
+                            <span className="material-symbols-outlined text-red-200 text-4xl group-hover:text-red-500/20 transition-colors">money_off</span>
+                        </div>
+                        <div>
+                            <span className="text-3xl font-bold text-gray-800 dark:text-white">R$ {totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <div className="w-full bg-gray-100 dark:bg-gray-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                                <div className="bg-red-500 h-full rounded-full" style={{ width: `${Math.min((totalExpense / (totalRevenue || 1)) * 100, 100)}%` }}></div>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2 text-right">
+                                {((totalExpense / (totalRevenue || 1)) * 100).toFixed(1)}% da receita
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -234,21 +301,38 @@ export const FinanceReportsScreen: React.FC = () => {
 
                 {/* Preview List (Reduced) */}
                 <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 dark:border-gray-800">
-                        <h3 className="font-bold text-gray-800 dark:text-white">Pré-visualização ({filteredData.length} lançamentos)</h3>
+                    <div className="p-4 border-b border-gray-100 dark:border-gray-800 grid grid-cols-12 gap-4">
+                        <div className="col-span-12 md:col-span-5 font-bold text-gray-800 dark:text-white">Descrição</div>
+                        <div className="hidden md:block col-span-2 font-bold text-right text-gray-800 dark:text-white">Bruto</div>
+                        <div className="hidden md:block col-span-2 font-bold text-right text-gray-800 dark:text-white">Taxas</div>
+                        <div className="hidden md:block col-span-3 font-bold text-right text-gray-800 dark:text-white">Líquido</div>
                     </div>
                     <div className="divide-y divide-gray-100 dark:divide-gray-800 max-h-96 overflow-y-auto">
-                        {filteredData.length > 0 ? filteredData.map(t => (
-                            <div key={t.id} className="p-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                                <div>
+                        {filteredData.length > 0 ? filteredData.map(t => {
+                            const fee = t.fee || 0;
+                            const net = t.amount - fee;
+                            return (
+                            <div key={t.id} className="p-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                <div className="col-span-12 md:col-span-5">
                                     <p className="font-medium text-gray-900 dark:text-white">{t.description}</p>
                                     <p className="text-xs text-gray-500">{t.date} • {t.category || 'Sem categoria'}</p>
+                                    {/* Mobile View for values */}
+                                    <div className="md:hidden mt-2 flex justify-between text-sm">
+                                        <span className="text-gray-500">Bruto: R$ {t.amount.toFixed(2)}</span>
+                                        <span className={t.type === TransactionType.Receita ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>Net: R$ {net.toFixed(2)}</span>
+                                    </div>
                                 </div>
-                                <span className={`font-bold ${t.type === TransactionType.Receita ? 'text-green-600' : 'text-red-600'}`}>
-                                    {t.type === TransactionType.Receita ? '+' : '-'} R$ {t.amount.toFixed(2)}
-                                </span>
+                                <div className="hidden md:block col-span-2 text-right font-medium text-gray-600 dark:text-gray-300">
+                                    R$ {t.amount.toFixed(2)}
+                                </div>
+                                <div className="hidden md:block col-span-2 text-right font-medium text-red-500 dark:text-red-400">
+                                    {fee > 0 ? `- R$ ${fee.toFixed(2)}` : '-'}
+                                </div>
+                                <div className={`hidden md:block col-span-3 text-right font-bold ${t.type === TransactionType.Receita ? 'text-green-600' : 'text-red-600'}`}>
+                                    {t.type === TransactionType.Receita ? '+' : '-'} R$ {net.toFixed(2)}
+                                </div>
                             </div>
-                        )) : (
+                        )}) : (
                             <div className="p-8 text-center text-gray-500">Nenhum dado encontrado neste período.</div>
                         )}
                     </div>
