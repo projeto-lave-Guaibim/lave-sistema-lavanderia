@@ -27,11 +27,20 @@ export const clientService = {
             number: client.number,
             neighborhood: client.neighborhood,
             cityCode: client.city_code, // IBGE
-            state: client.state
+            state: client.state,
+            isContract: (client.tags || []).includes('contrato') // Map from tags
         }));
     },
 
     create: async (client: Omit<Client, 'id'>) => {
+        // Manage Tags for Contract
+        let tags = client.tags || [];
+        if (client.isContract && !tags.includes('contrato')) {
+            tags.push('contrato');
+        } else if (!client.isContract) {
+            tags = tags.filter(t => t !== 'contrato');
+        }
+
         const { data, error } = await supabase
             .from('clients')
             .insert([{
@@ -41,7 +50,7 @@ export const clientService = {
                 document: client.document,
                 type: client.type,
                 notes: client.notes,
-                tags: client.tags,
+                tags: tags,
                 // New Fields
                 zip_code: client.zipCode,
                 street: client.street,
@@ -64,11 +73,20 @@ export const clientService = {
             number: data.number,
             neighborhood: data.neighborhood,
             cityCode: data.city_code,
-            state: data.state
+            state: data.state,
+            isContract: (data.tags || []).includes('contrato')
         };
     },
 
     update: async (client: Client) => {
+        // Manage Tags for Contract
+        let tags = client.tags || [];
+        if (client.isContract && !tags.includes('contrato')) {
+            tags.push('contrato');
+        } else if (!client.isContract) {
+            tags = tags.filter(t => t !== 'contrato');
+        }
+
         const { data, error } = await supabase
             .from('clients')
             .update({
@@ -78,7 +96,7 @@ export const clientService = {
                 document: client.document,
                 type: client.type,
                 notes: client.notes,
-                tags: client.tags,
+                tags: tags,
                 // New Fields
                 zip_code: client.zipCode,
                 street: client.street,
@@ -102,7 +120,8 @@ export const clientService = {
             number: data.number,
             neighborhood: data.neighborhood,
             cityCode: data.city_code,
-            state: data.state
+            state: data.state,
+            isContract: (data.tags || []).includes('contrato')
         };
     },
 

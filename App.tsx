@@ -22,6 +22,8 @@ import RegisterScreen from './screens/RegisterScreen';
 import { NewOrderScreenV2 } from './screens/NewOrderScreenV2';
 import NewFinanceScreen from './screens/NewFinanceScreen';
 import EditFinanceScreen from './screens/EditFinanceScreen';
+import { ContractClosingScreen } from './screens/ContractClosingScreen';
+
 
 import Sidebar from './components/Sidebar';
 import { useState } from 'react';
@@ -69,6 +71,7 @@ const App = () => {
                             <Route path="finance/new" element={<NewFinanceScreen />} />
                             <Route path="finance/edit/:transactionId" element={<EditFinanceScreen />} />
                             <Route path="finance/reports" element={<FinanceReportsScreen />} />
+                            <Route path="finance/contracts" element={<ContractClosingScreen />} />
                             <Route path="profile" element={<UserScreen />} />
                         </Route>
                     </Routes>

@@ -85,48 +85,66 @@ export const StockControlScreen: React.FC = () => {
                     <button onClick={() => navigate('/stock/new')} className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"><span className="material-symbols-outlined text-2xl">add</span></button>
                 }
             />
-            <main className="flex-1 overflow-y-auto pb-28 no-scrollbar bg-background-light dark:bg-background-dark">
+            <main className="flex-1 overflow-y-auto pb-24 no-scrollbar bg-background-light dark:bg-background-dark">
                 {loading ? (
                     <div className="flex justify-center items-center h-40">
-                        <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+                        <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
                     </div>
                 ) : (
                     <>
-                        <div className="grid grid-cols-2 gap-3 p-4">
-                            <div className="flex flex-col p-4 bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800"><span className="text-sm text-gray-500 font-medium">Total de Itens</span><span className="text-2xl font-bold text-[#111418] dark:text-white mt-1">{totalItems}</span></div>
-                            <div className="flex flex-col p-4 bg-red-50 dark:bg-red-900/10 rounded-xl shadow-sm border border-red-100 dark:border-red-900/30">
-                                <span className="text-sm text-red-600 dark:text-red-400 font-bold">Repor Estoque</span>
-                                <div className="flex items-center gap-2 mt-1"><span className="text-2xl font-bold text-red-700 dark:text-red-400">{itemsToRestock}</span><span className="material-symbols-outlined text-red-500 text-lg">warning</span></div>
+                        {/* Summary cards - compact */}
+                        <div className="grid grid-cols-2 gap-2 p-3">
+                            <div className="flex items-center gap-2 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a222d] p-2.5">
+                                <span className="material-symbols-outlined text-primary text-[18px]">inventory</span>
+                                <div>
+                                    <p className="text-[10px] text-gray-500 font-semibold uppercase tracking-wide">Total de Itens</p>
+                                    <p className="text-lg font-bold text-gray-900 dark:text-white">{totalItems}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 rounded border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10 p-2.5">
+                                <span className="material-symbols-outlined text-red-500 text-[18px]">warning</span>
+                                <div>
+                                    <p className="text-[10px] text-red-600 dark:text-red-400 font-semibold uppercase tracking-wide">Repor Estoque</p>
+                                    <p className="text-lg font-bold text-red-700 dark:text-red-400">{itemsToRestock}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className="px-4 pb-2">
-                            <div className="relative"><div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><span className="material-symbols-outlined text-gray-400 text-[20px]">search</span></div><input className="w-full h-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-surface-light dark:bg-surface-dark text-sm pl-10 pr-4 focus:ring-primary focus:border-primary transition-shadow placeholder:text-gray-400" placeholder="Buscar produto..." type="text" /></div>
+                        {/* Search compact */}
+                        <div className="px-3 pb-2">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                    <span className="material-symbols-outlined text-gray-400 text-[16px]">search</span>
+                                </div>
+                                <input className="w-full h-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a222d] text-xs pl-8 pr-3 focus:ring-primary focus:border-primary transition-shadow placeholder:text-gray-400" placeholder="Buscar produto..." type="text" />
+                            </div>
                         </div>
-                        <div className="pt-4 px-4 flex flex-col gap-4">
-                            {stockItems.map(item => {
+                        {/* Stock list */}
+                        <div className="px-3 pb-4">
+                            <div className="rounded border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-[#1a222d]">
+                                {stockItems.map((item, idx) => {
                                 const status = getStatus(item);
                                 return (
-                                    <div key={item.id} className={`group relative flex flex-col bg-surface-light dark:bg-surface-dark rounded-xl border ${status.borderColor} shadow-sm overflow-hidden active:scale-[0.99] transition-transform`}>
-                                        <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${status.barColor}`}></div>
-                                        <div className="p-4 pl-5">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`size-10 rounded-lg ${status.iconBg} flex items-center justify-center ${status.iconColor}`}><span className="material-symbols-outlined">{getIconForItem(item.name)}</span></div>
-                                                    <div><h4 className="font-bold text-[#111418] dark:text-white text-lg leading-tight">{item.name}</h4><p className="text-xs text-gray-500 font-medium uppercase tracking-wide mt-0.5">{item.category} / {item.volume}</p></div>
-                                                </div>
-                                                <button onClick={() => navigate(`/stock/edit/${item.id}`)} className="size-8 flex items-center justify-center text-gray-400 hover:text-primary rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"><span className="material-symbols-outlined text-[20px]">edit</span></button>
-                                            </div>
-                                            <div className={`mt-4 flex items-end justify-between ${status.bgColor} rounded-lg p-3 border ${status.borderInside}`}>
-                                                <div><p className={`text-[10px] font-bold ${status.qtyLabelColor} uppercase tracking-wider mb-1`}>Quantidade Atual</p><p className={`text-2xl font-bold ${status.qtyColor}`}>{item.quantity} <span className="text-sm font-medium opacity-70">un</span></p></div>
-                                                <div className="text-right"><p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Mínimo</p><p className="text-base font-bold text-gray-700 dark:text-gray-300">{item.minQuantity} <span className="text-xs font-medium opacity-70">un</span></p></div>
-                                            </div>
-                                            {status.message && (
-                                                <div className="mt-2 flex items-center gap-1.5"><span className="material-symbols-outlined text-red-500 text-sm">{status.messageIcon}</span><span className="text-xs font-bold text-red-600 dark:text-red-400">{status.message}</span></div>
-                                            )}
+                                    <div key={item.id} className={`flex items-center gap-3 px-3 py-2 ${idx < stockItems.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''}`}>
+                                        <div className={`w-1 self-stretch rounded-full ${status.barColor} shrink-0`}></div>
+                                        <div className={`w-7 h-7 rounded flex items-center justify-center shrink-0 ${status.iconBg} ${status.iconColor}`}>
+                                            <span className="material-symbols-outlined text-[15px]">{getIconForItem(item.name)}</span>
                                         </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-semibold text-gray-800 dark:text-white line-clamp-1">{item.name}</p>
+                                            <p className="text-[10px] text-gray-400">{item.category} · {item.volume}</p>
+                                            {status.message && <p className="text-[9px] font-bold text-red-500 uppercase">{status.message}</p>}
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className={`text-sm font-bold ${status.qtyColor}`}>{item.quantity} <span className="text-[10px] font-normal opacity-70">un</span></p>
+                                            <p className="text-[10px] text-gray-400">Mín: {item.minQuantity}</p>
+                                        </div>
+                                        <button onClick={() => navigate(`/stock/edit/${item.id}`)} className="w-7 h-7 flex items-center justify-center rounded text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shrink-0">
+                                            <span className="material-symbols-outlined text-[15px]">edit</span>
+                                        </button>
                                     </div>
                                 );
                             })}
+                            </div>
                         </div>
                     </>
                 )}
@@ -188,47 +206,54 @@ export const AddStockItemScreen: React.FC = () => {
 
     return (
         <>
-            <header className="sticky top-0 z-10 flex items-center bg-surface-light dark:bg-surface-dark px-4 py-3 shadow-sm justify-between border-b border-gray-100 dark:border-gray-800">
-                <button onClick={() => navigate(-1)} className="text-primary hover:text-blue-600 active:scale-95 transition-transform flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"><span className="material-symbols-outlined text-[24px]">arrow_back_ios_new</span></button>
-                <h1 className="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] text-center">Adicionar Insumo</h1>
-                <div className="size-10"></div>
+            <header className="sticky top-0 z-10 flex items-center bg-white dark:bg-[#1a222d] px-3 justify-between border-b border-gray-200 dark:border-gray-700 h-11">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-primary hover:text-blue-700 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[16px]">arrow_back_ios_new</span> Voltar
+                </button>
+                <h1 className="text-gray-900 dark:text-white text-sm font-bold">Adicionar Insumo</h1>
+                <div className="w-16"></div>
             </header>
-            <main className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-6 pb-24">
-                <div className="max-w-2xl mx-auto space-y-6">
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 px-1"><span className="material-symbols-outlined text-primary text-[20px]">inventory</span><h3 className="text-gray-900 dark:text-white text-base font-bold leading-tight">Dados do Insumo</h3></div>
-                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
+            <main className="flex-1 overflow-y-auto no-scrollbar p-3 pb-24">
+                <div className="max-w-2xl mx-auto space-y-4">
+                    <section>
+                        <div className="flex items-center gap-1.5 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700">
+                            <span className="material-symbols-outlined text-primary text-[16px]">inventory</span>
+                            <h3 className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wide">Dados do Insumo</h3>
+                        </div>
+                        <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded p-3 space-y-3">
                             <InputField label="Nome do Insumo" placeholder="Ex: Sabão Líquido Omo" name="name" value={formData.name} onChange={handleChange} />
-                            <div className="relative">
-                                <label className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal pb-2 block">Categoria</label>
-                                <select name="category" value={formData.category} onChange={handleChange} className="form-select w-full rounded-lg text-gray-900 dark:text-white placeholder:text-gray-400 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary focus:ring-1 focus:ring-primary/20 h-12 px-4 text-base transition-all appearance-none">
+                            <div>
+                                <label className="normal-case text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block" style={{textTransform:'none', letterSpacing:'normal'}}>Categoria</label>
+                                <select name="category" value={formData.category} onChange={handleChange} className="w-full rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white h-8 px-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary/20">
                                     <option>Lavagem</option>
                                     <option>Finalização</option>
                                     <option>Tira Manchas</option>
                                     <option>Embalagem</option>
                                     <option>Outros</option>
                                 </select>
-                                <div className="absolute right-3 top-10 pointer-events-none text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
                             </div>
                         </div>
                     </section>
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 px-1"><span className="material-symbols-outlined text-primary text-[20px]">rule</span><h3 className="text-gray-900 dark:text-white text-base font-bold leading-tight">Controle de Estoque</h3></div>
-                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <section>
+                        <div className="flex items-center gap-1.5 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700">
+                            <span className="material-symbols-outlined text-primary text-[16px]">rule</span>
+                            <h3 className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400 tracking-wide">Controle de Estoque</h3>
+                        </div>
+                        <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded p-3 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <InputField label="Volume / Unidade" placeholder="Ex: 5 Litros" name="volume" value={formData.volume} onChange={handleChange} />
                                 <InputField label="Quantidade Atual" placeholder="0" type="number" name="quantity" value={formData.quantity} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <InputField label="Quantidade Mínima" placeholder="0" type="number" name="minQuantity" value={formData.minQuantity} onChange={handleChange} />
                                 <InputField label="Valor Total (R$)" placeholder="0,00" type="number" name="cost" value={formData.cost} onChange={handleChange} />
                             </div>
-                            <p className="text-xs text-gray-500 mt-2 px-1">O valor será lançado automaticamente como despesa no financeiro.</p>
+                            <p className="text-[10px] text-gray-400">Valor lançado automaticamente como despesa no financeiro.</p>
                         </div>
                     </section>
-                    <div className="pt-4 flex items-center justify-end gap-3">
-                        <button onClick={() => navigate(-1)} className="h-12 px-6 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancelar</button>
-                        <button onClick={handleSubmit} disabled={submitting} className="h-12 px-8 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-dark shadow-md shadow-primary/20 transition-all">
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                        <button onClick={() => navigate(-1)} className="h-8 px-4 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold text-xs hover:bg-gray-100 transition-colors">Cancelar</button>
+                        <button onClick={handleSubmit} disabled={submitting} className="h-8 px-5 rounded bg-primary text-white font-semibold text-xs hover:bg-primary-dark transition-colors disabled:opacity-60">
                             {submitting ? 'Salvando...' : 'Salvar Insumo'}
                         </button>
                     </div>
@@ -271,10 +296,12 @@ export const EditStockItemScreen: React.FC = () => {
 
     return (
         <>
-            <header className="sticky top-0 z-10 flex items-center bg-surface-light dark:bg-surface-dark px-4 py-3 shadow-sm justify-between border-b border-gray-100 dark:border-gray-800">
-                <button onClick={() => navigate(-1)} className="text-primary hover:text-blue-600 active:scale-95 transition-transform flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-gray-50 dark:hover:bg-gray-800"><span className="material-symbols-outlined text-[24px]">arrow_back_ios_new</span></button>
-                <h1 className="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] text-center">Editar Insumo</h1>
-                <div className="size-10"></div>
+            <header className="sticky top-0 z-10 flex items-center bg-white dark:bg-[#1a222d] px-3 justify-between border-b border-gray-200 dark:border-gray-700 h-11">
+                <button onClick={() => navigate(-1)} className="flex items-center gap-1 text-primary hover:text-blue-700 text-xs font-semibold">
+                    <span className="material-symbols-outlined text-[16px]">arrow_back_ios_new</span> Voltar
+                </button>
+                <h1 className="text-gray-900 dark:text-white text-sm font-bold">Editar Insumo</h1>
+                <div className="w-16"></div>
             </header>
             <main className="flex-1 overflow-y-auto no-scrollbar p-4 md:p-6 pb-24">
                 <div className="max-w-2xl mx-auto space-y-6">

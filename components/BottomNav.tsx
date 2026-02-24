@@ -32,32 +32,31 @@ const BottomNav: React.FC = () => {
     
     const getNavLinkClass = (path: string) => {
         const isActive = activePath === path;
-        return `flex flex-col items-center justify-center w-full h-full text-gray-400 dark:text-gray-500 hover:text-primary transition-colors group relative ${isActive ? 'text-primary' : ''}`;
+        return `flex flex-col items-center justify-center w-full h-full transition-colors group relative ${isActive ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-primary'}`;
     };
 
     if (currentPath === '/orders/new') return null;
 
     return (
-        <nav className="absolute bottom-0 w-full bg-surface-light/95 dark:bg-surface-dark/95 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 pb-safe z-30 md:hidden">
-            <div className="flex w-full items-center justify-around h-[60px] pb-2">
+        <nav className="absolute bottom-0 w-full bg-white dark:bg-[#1a222d] border-t border-gray-200 dark:border-gray-700 pb-safe z-30 md:hidden">
+            <div className="flex w-full items-center justify-around h-[52px]">
                 {navItems.map((item) => {
                     const isActive = activePath === item.path;
                     return (
                         <NavLink key={item.path} to={item.path} className={getNavLinkClass(item.path)}>
                             {isFormPage && isActive && (
-                                <div className="absolute -top-2 w-10 h-1 bg-primary rounded-b-full"></div>
+                                <div className="absolute -top-px w-8 h-0.5 bg-primary rounded-b"></div>
                             )}
-                            <span className={`material-symbols-outlined text-[24px] mb-1 group-hover:-translate-y-0.5 transition-transform ${!isFormPage && isActive ? 'filled' : ''}`}>
+                            <span className={`material-symbols-outlined text-[22px] mb-0.5 ${!isFormPage && isActive ? 'filled' : ''}`}>
                                 {item.icon}
                             </span>
-                            <span className={`text-[10px] ${isActive ? 'font-bold' : 'font-medium'}`}>
-                                {item.label}
+                            <span className={`text-[9px] font-medium tracking-wide ${isActive ? 'font-bold' : ''}`}>
+                                {item.label.toUpperCase()}
                             </span>
                         </NavLink>
                     );
                 })}
             </div>
-            <div className="h-5 w-full bg-surface-light/95 dark:bg-surface-dark/95"></div>
         </nav>
     );
 };

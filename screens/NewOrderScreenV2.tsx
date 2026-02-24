@@ -34,31 +34,19 @@ export const NewOrderScreenV2: React.FC = () => {
         }
     };
 
-    const calculateTotal = () => {
-        return orderItems.reduce((sum, item) => sum + item.subtotal, 0);
-    };
+    const calculateTotal = () => orderItems.reduce((sum, item) => sum + item.subtotal, 0);
 
     const handleSubmit = async () => {
-        if (!selectedClient) {
-            alert('Selecione um cliente');
-            return;
-        }
-
-        if (orderItems.length === 0) {
-            alert('Adicione pelo menos um serviço');
-            return;
-        }
+        if (!selectedClient) { alert('Selecione um cliente'); return; }
+        if (orderItems.length === 0) { alert('Adicione pelo menos um serviço'); return; }
 
         setSubmitting(true);
-
         try {
             const total = calculateTotal();
-            
-            // Create order
             const newOrder = await orderService.create({
                 id: 0,
                 client: selectedClient,
-                service: `${orderItems.length} serviço(s)`, // Summary
+                service: `${orderItems.length} serviço(s)`,
                 details: details || 'Pedido com múltiplos serviços',
                 status: OrderStatus.Pendente,
                 value: total,
@@ -67,12 +55,7 @@ export const NewOrderScreenV2: React.FC = () => {
                 discount: 0
             });
 
-            // Create order items
-            const itemsToCreate = orderItems.map(item => ({
-                ...item,
-                order_id: newOrder.id
-            }));
-
+            const itemsToCreate = orderItems.map(item => ({ ...item, order_id: newOrder.id }));
             await orderItemService.createMany(itemsToCreate);
 
             alert('Pedido criado com sucesso!');
@@ -88,7 +71,7 @@ export const NewOrderScreenV2: React.FC = () => {
     if (loading) {
         return (
             <div className="flex justify-center items-center h-screen">
-                <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+                <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
             </div>
         );
     }
@@ -96,85 +79,98 @@ export const NewOrderScreenV2: React.FC = () => {
     return (
         <>
             <Header 
-                title="Novo Pedido (Múltiplos Serviços)" 
+                title="Novo Pedido" 
                 onMenuClick={toggleSidebar}
                 rightActions={
                     <button
                         onClick={() => navigate('/orders')}
-                        className="flex items-center justify-center size-10 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                        className="flex items-center justify-center w-8 h-8 rounded text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     >
-                        <span className="material-symbols-outlined">close</span>
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 }
             />
 
-            <main className="flex-1 overflow-y-auto p-4 pb-24 bg-background-light dark:bg-background-dark">
-                <div className="max-w-4xl mx-auto space-y-6">
+            <main className="flex-1 overflow-y-auto p-3 pb-24 bg-[#eef0f3] dark:bg-[#111821]">
+                <div className="max-w-4xl mx-auto space-y-3">
+
                     {/* Client Selection */}
-                    <div className="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Cliente</h3>
-                        <select
-                            value={selectedClient?.id || ''}
-                            onChange={(e) => {
-                                const client = clients.find(c => c.id === e.target.value);
-                                setSelectedClient(client || null);
-                            }}
-                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white focus:ring-primary focus:border-primary"
-                        >
-                            <option value="">Selecione um cliente...</option>
-                            {clients.map(client => (
-                                <option key={client.id} value={client.id}>
-                                    {client.name}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="flex items-center gap-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] px-3 py-1.5">
+                            <span className="material-symbols-outlined text-primary text-[14px]">person</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Cliente</span>
+                        </div>
+                        <div className="p-3">
+                            <select
+                                value={selectedClient?.id || ''}
+                                onChange={(e) => {
+                                    const client = clients.find(c => c.id === e.target.value);
+                                    setSelectedClient(client || null);
+                                }}
+                                className="w-full h-8 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary focus:border-primary"
+                            >
+                                <option value="">Selecione um cliente...</option>
+                                {clients.map(client => (
+                                    <option key={client.id} value={client.id}>
+                                        {client.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
 
                     {/* Order Items */}
-                    <div className="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-                        <OrderItemInput 
-                            items={orderItems}
-                            onChange={setOrderItems}
-                        />
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="flex items-center gap-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] px-3 py-1.5">
+                            <span className="material-symbols-outlined text-primary text-[14px]">local_laundry_service</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Serviços</span>
+                        </div>
+                        <div className="p-3">
+                            <OrderItemInput 
+                                items={orderItems}
+                                onChange={setOrderItems}
+                            />
+                        </div>
                     </div>
 
-                    {/* Details */}
-                    <div className="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-800">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Observações</h3>
-                        <textarea
-                            value={details}
-                            onChange={(e) => setDetails(e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white focus:ring-primary focus:border-primary resize-none"
-                            rows={3}
-                            placeholder="Observações sobre o pedido..."
-                        />
+                    {/* Observations */}
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="flex items-center gap-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] px-3 py-1.5">
+                            <span className="material-symbols-outlined text-primary text-[14px]">notes</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Observações</span>
+                        </div>
+                        <div className="p-3">
+                            <textarea
+                                value={details}
+                                onChange={(e) => setDetails(e.target.value)}
+                                className="w-full rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 py-2 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary focus:border-primary resize-none"
+                                rows={2}
+                                placeholder="Observações sobre o pedido..."
+                            />
+                        </div>
                     </div>
 
-                    {/* Submit Button */}
-                    <div className="bg-white dark:bg-surface-dark rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-800">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">Total:</span>
-                            <span className="text-2xl font-bold text-primary">
-                                R$ {calculateTotal().toFixed(2)}
+                    {/* Total + Submit */}
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 dark:border-gray-700">
+                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Total do Pedido:</span>
+                            <span className="text-base font-bold text-primary">
+                                R$ {calculateTotal().toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                         </div>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={submitting || !selectedClient || orderItems.length === 0}
-                            className="w-full h-14 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                        >
-                            {submitting ? (
-                                <>
-                                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
-                                    <span>Criando Pedido...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="material-symbols-outlined">check</span>
-                                    <span>Criar Pedido</span>
-                                </>
-                            )}
-                        </button>
+                        <div className="p-3">
+                            <button
+                                onClick={handleSubmit}
+                                disabled={submitting || !selectedClient || orderItems.length === 0}
+                                className="w-full h-9 rounded bg-primary text-white font-bold text-xs hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                            >
+                                {submitting ? (
+                                    <><span className="material-symbols-outlined animate-spin text-[15px]">progress_activity</span> Criando Pedido...</>
+                                ) : (
+                                    <><span className="material-symbols-outlined text-[15px]">check</span> Criar Pedido</>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </main>

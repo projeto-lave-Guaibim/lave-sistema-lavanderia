@@ -8,6 +8,7 @@ import { orderService } from '../services/orderService';
 import { orderItemService } from '../services/orderItemService';
 import { clientService } from '../services/clientService';
 import { generateRPSXML, downloadRPS } from '../utils/rpsGenerator';
+import { BASE_RATE } from '../utils/contractUtils';
 import { generateOrdersCSV, downloadCSV } from '../utils/csvGenerator';
 import { feeUtils } from '../utils/feeUtils';
 
@@ -440,16 +441,39 @@ export const NewOrderScreen: React.FC = () => {
                 ? `Turista - ${touristName}${touristContact ? ` - ${touristContact}` : ''}` 
                 : selectedClient.name;
 
+            // Contract Logic
+            // Base: use calculated totalValue from items (service price × qty)
+            let finalValue = totalValue;
+            let finalStatus = OrderStatus.Pendente;
+            let finalPaymentMethod: string | undefined = undefined;
+            let detailsWithContract = finalDetails;
+
+            if (selectedClient.isContract) {
+                // Sum KG-type items
+                const totalKg = allItems
+                    .filter(i => i.service_name.toLowerCase().includes('kg'))
+                    .reduce((sum, i) => sum + i.quantity, 0);
+
+                if (totalKg > 0) {
+                    // Cobra a taxa base (R$15,90/kg) no ato do pedido.
+                    // O valor correto pela faixa mensal é calculado no Fechamento de Contratos.
+                    finalValue = parseFloat((totalKg * BASE_RATE).toFixed(2));
+                    detailsWithContract = `[Contrato | ${totalKg.toFixed(2)} kg × R$${BASE_RATE.toFixed(2)}] ` + finalDetails;
+                    finalPaymentMethod = 'Contrato Mensal';
+                }
+            }
+
             const newOrder: Order = {
                 id: 0,
                 client: { ...selectedClient, name: finalClientName },
                 service: `${allItems.length} serviço(s)`,
-                details: finalDetails,
-                value: totalValue,
-                status: OrderStatus.Pendente,
+                details: detailsWithContract,
+                value: finalValue,
+                status: finalStatus,
                 extras: [],
                 discount: parseFloat(discount) || 0,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                payment_method: finalPaymentMethod
             };
 
             const createdOrder = await orderService.create(newOrder);

@@ -2,9 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Header from '../components/Header';
-
 import { authService } from '../services/authService';
-
 import { adminService } from '../services/adminService';
 
 const UserScreen: React.FC = () => {
@@ -18,75 +16,67 @@ const UserScreen: React.FC = () => {
         navigate('/');
     };
 
+    const menuItem = (icon: string, label: string, onClick: () => void, color = 'text-gray-500') => (
+        <button
+            onClick={onClick}
+            className="w-full flex items-center justify-between px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left border-b border-gray-100 dark:border-gray-800 last:border-0"
+        >
+            <div className="flex items-center gap-2.5">
+                <span className={`material-symbols-outlined text-[18px] ${color}`}>{icon}</span>
+                <span className="text-xs font-medium text-gray-800 dark:text-gray-200">{label}</span>
+            </div>
+            <span className="material-symbols-outlined text-gray-300 text-[16px]">chevron_right</span>
+        </button>
+    );
+
     return (
-        <div className="flex flex-col h-full bg-background-light dark:bg-background-dark">
+        <div className="flex flex-col h-full bg-[#eef0f3] dark:bg-[#111821]">
             <Header title="Meu Perfil" />
             
-            <main className="flex-1 overflow-y-auto p-4 pb-24">
-                <div className="flex flex-col items-center py-8">
-                    <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-                        <span className="material-symbols-outlined text-primary text-4xl">person</span>
+            <main className="flex-1 overflow-y-auto p-3 pb-24 space-y-3">
+                {/* User card */}
+                <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-primary text-[20px]">person</span>
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-gray-900 dark:text-white">{user?.name}</p>
+                            <p className="text-[10px] text-gray-500">@{user?.username} {user?.email ? `• ${user.email}` : ''}</p>
+                        </div>
+                        <span className="ml-auto px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded">
+                            {user?.role === 'admin' ? 'Admin' : 'Usuário'}
+                        </span>
                     </div>
-                    <h2 className="text-xl font-bold text-[#111418] dark:text-white">{user?.name}</h2>
-                    <p className="text-gray-500 dark:text-gray-400">@{user?.username}</p>
-                    <p className="text-gray-400 dark:text-gray-500 text-sm">{user?.email}</p>
-                    <span className="mt-2 px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-bold uppercase rounded-full">
-                        {user?.role || 'Usuário'}
-                    </span>
-                    {/* Debug Info */}
-                    <p className="text-xs text-gray-300 mt-1">Role: {user?.role || 'undefined'}</p>
                 </div>
 
-                <div className="space-y-4">
-                    {user?.role === 'admin' && (
-                        <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-                            <h3 className="text-lg font-bold text-[#111418] dark:text-white mb-4">Administração</h3>
-                            <button 
-                                onClick={() => setIsManageUsersOpen(true)}
-                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-primary">group_add</span>
-                                    <span className="text-[#111418] dark:text-white font-medium">Gerenciar Usuários</span>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
-                            </button>
+                {/* Admin section */}
+                {user?.role === 'admin' && (
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="px-3 py-1.5 bg-gray-50 dark:bg-[#1e2a38] border-b border-gray-200 dark:border-gray-700">
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Administração</span>
                         </div>
-                    )}
-
-                    <div className="bg-surface-light dark:bg-surface-dark rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800">
-                        <h3 className="text-lg font-bold text-[#111418] dark:text-white mb-4">Configurações</h3>
-                        
-                        <div className="space-y-2">
-                            <button 
-                                onClick={() => setIsChangePasswordOpen(true)}
-                                className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-gray-500">lock</span>
-                                    <span className="text-[#111418] dark:text-white font-medium">Alterar Senha</span>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
-                            </button>
-                            
-                            <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors text-left">
-                                <div className="flex items-center gap-3">
-                                    <span className="material-symbols-outlined text-gray-500">notifications</span>
-                                    <span className="text-[#111418] dark:text-white font-medium">Notificações</span>
-                                </div>
-                                <span className="material-symbols-outlined text-gray-400">chevron_right</span>
-                            </button>
-                        </div>
+                        {menuItem('group_add', 'Gerenciar Usuários', () => setIsManageUsersOpen(true), 'text-primary')}
                     </div>
+                )}
 
-                    <button 
-                        onClick={handleLogout}
-                        className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                    >
-                        <span className="material-symbols-outlined">logout</span>
-                        Sair da Conta
-                    </button>
+                {/* Settings section */}
+                <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                    <div className="px-3 py-1.5 bg-gray-50 dark:bg-[#1e2a38] border-b border-gray-200 dark:border-gray-700">
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Configurações</span>
+                    </div>
+                    {menuItem('lock', 'Alterar Senha', () => setIsChangePasswordOpen(true))}
+                    {menuItem('notifications', 'Notificações', () => {})}
                 </div>
+
+                {/* Logout */}
+                <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center justify-center gap-2 h-9 rounded border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold text-xs hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[16px]">logout</span>
+                    Sair da Conta
+                </button>
             </main>
             
             {isChangePasswordOpen && <ChangePasswordModal onClose={() => setIsChangePasswordOpen(false)} />}
@@ -121,53 +111,37 @@ const ChangePasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => 
         }
     };
 
+    const inputClass = "w-full h-8 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2.5 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary focus:border-primary";
+    const labelClass = "block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1";
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#1a222d] rounded-2xl w-full max-w-md p-6 shadow-xl border border-gray-100 dark:border-gray-800">
-                <h3 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Alterar Senha</h3>
-                
-                <div className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4">
+            <div className="bg-white dark:bg-[#1a222d] w-full sm:max-w-sm rounded-t-xl sm:rounded border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38]">
+                    <h3 className="text-sm font-bold text-gray-800 dark:text-white">Alterar Senha</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div className="p-4 space-y-3">
                     <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 block">Senha Atual</label>
-                        <input 
-                            type="password" 
-                            className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white focus:ring-2 focus:ring-primary/50"
-                            value={oldPassword}
-                            onChange={e => setOldPassword(e.target.value)}
-                        />
+                        <label className={labelClass}>Senha Atual</label>
+                        <input type="password" className={inputClass} value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 block">Nova Senha</label>
-                        <input 
-                            type="password" 
-                            className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white focus:ring-2 focus:ring-primary/50"
-                            value={newPassword}
-                            onChange={e => setNewPassword(e.target.value)}
-                        />
+                        <label className={labelClass}>Nova Senha</label>
+                        <input type="password" className={inputClass} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                     </div>
                     <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1 block">Confirmar Nova Senha</label>
-                        <input 
-                            type="password" 
-                            className="w-full h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white focus:ring-2 focus:ring-primary/50"
-                            value={confirmPassword}
-                            onChange={e => setConfirmPassword(e.target.value)}
-                        />
+                        <label className={labelClass}>Confirmar Nova Senha</label>
+                        <input type="password" className={inputClass} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
                     </div>
                 </div>
-
-                <div className="flex gap-3 mt-6">
-                    <button 
-                        onClick={onClose}
-                        className="flex-1 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    >
+                <div className="flex gap-2 px-4 pb-4">
+                    <button onClick={onClose} className="flex-1 h-8 rounded border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 transition-colors">
                         Cancelar
                     </button>
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="flex-1 h-12 rounded-xl bg-primary text-white font-bold hover:bg-blue-600 transition-colors disabled:opacity-50"
-                    >
+                    <button onClick={handleSubmit} disabled={loading} className="flex-1 h-8 rounded bg-primary text-white text-xs font-bold hover:bg-primary-dark disabled:opacity-50 transition-colors">
                         {loading ? 'Salvando...' : 'Salvar'}
                     </button>
                 </div>
@@ -182,7 +156,6 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [isAdding, setIsAdding] = React.useState(false);
     const [editingUser, setEditingUser] = React.useState<any | null>(null);
 
-    // Form states
     const [name, setName] = React.useState('');
     const [username, setUsername] = React.useState('');
     const [email, setEmail] = React.useState('');
@@ -190,9 +163,7 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     const [role, setRole] = React.useState<'admin' | 'user'>('user');
     const [submitting, setSubmitting] = React.useState(false);
 
-    React.useEffect(() => {
-        loadUsers();
-    }, []);
+    React.useEffect(() => { loadUsers(); }, []);
 
     const loadUsers = async () => {
         try {
@@ -212,9 +183,7 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         try {
             await adminService.createUser(name, username, email, password, role);
             alert('Usuário criado com sucesso!');
-            setIsAdding(false);
-            // Reset form
-            setName(''); setUsername(''); setEmail(''); setPassword(''); setRole('user');
+            resetForm();
             loadUsers();
         } catch (error: any) {
             alert('Erro ao criar usuário: ' + error.message);
@@ -223,30 +192,19 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         }
     };
 
-    const handleEditUser = (user: any) => {
-        setEditingUser(user);
-        setName(user.name);
-        setUsername(user.username);
-        setEmail(user.email);
-        setRole(user.role);
-        setPassword(''); // Don't pre-fill password
+    const handleEditUser = (u: any) => {
+        setEditingUser(u);
+        setName(u.name); setUsername(u.username); setEmail(u.email); setRole(u.role); setPassword('');
     };
 
     const handleUpdateUser = async () => {
         if (!name || !username || !email) return alert('Preencha todos os campos obrigatórios');
         setSubmitting(true);
         try {
-            // Update user data
             await adminService.updateUser(editingUser.id, { name, username, email, role });
-            
-            // Update password if provided
-            if (password) {
-                await adminService.resetPassword(editingUser.id, password);
-            }
-            
+            if (password) await adminService.resetPassword(editingUser.id, password);
             alert('Usuário atualizado com sucesso!');
-            setEditingUser(null);
-            setName(''); setUsername(''); setEmail(''); setPassword(''); setRole('user');
+            resetForm();
             loadUsers();
         } catch (error: any) {
             alert('Erro ao atualizar usuário: ' + error.message);
@@ -256,10 +214,7 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const handleDeleteUser = async (userId: string, userName: string) => {
-        if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) {
-            return;
-        }
-
+        if (!confirm(`Excluir o usuário "${userName}"? Esta ação não pode ser desfeita.`)) return;
         try {
             await adminService.deleteUser(userId);
             alert('Usuário excluído com sucesso!');
@@ -270,83 +225,84 @@ const ManageUsersModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     };
 
     const resetForm = () => {
-        setIsAdding(false);
-        setEditingUser(null);
-        setName('');
-        setUsername('');
-        setEmail('');
-        setPassword('');
-        setRole('user');
+        setIsAdding(false); setEditingUser(null);
+        setName(''); setUsername(''); setEmail(''); setPassword(''); setRole('user');
     };
 
+    const inputClass = "w-full h-8 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-2.5 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary focus:border-primary";
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-[#1a222d] rounded-2xl w-full max-w-3xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-xl font-bold text-[#111418] dark:text-white">Gerenciar Usuários</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                        <span className="material-symbols-outlined">close</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+            <div className="bg-white dark:bg-[#1a222d] w-full max-w-2xl rounded border border-gray-200 dark:border-gray-700 shadow-xl max-h-[90vh] flex flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] shrink-0">
+                    <h3 className="text-sm font-bold text-gray-800 dark:text-white">Gerenciar Usuários</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                     </button>
                 </div>
 
-                {(isAdding || editingUser) ? (
-                    <div className="space-y-4">
-                        <h4 className="font-bold text-primary">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <input placeholder="Nome Completo" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={name} onChange={e => setName(e.target.value)} />
-                            <input placeholder="Usuário (Login)" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={username} onChange={e => setUsername(e.target.value)} />
-                            <input placeholder="E-mail" type="email" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={email} onChange={e => setEmail(e.target.value)} />
-                            <input placeholder={editingUser ? "Nova Senha (deixe vazio para manter)" : "Senha"} type="password" className="form-input h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={password} onChange={e => setPassword(e.target.value)} />
-                            <select className="form-select h-12 px-4 rounded-xl bg-gray-50 dark:bg-gray-800 border-none text-[#111418] dark:text-white" value={role} onChange={e => setRole(e.target.value as any)}>
-                                <option value="user">Usuário Padrão</option>
-                                <option value="admin">Administrador</option>
-                            </select>
-                        </div>
-                        <div className="flex gap-3 pt-2">
-                            <button onClick={resetForm} className="flex-1 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 font-bold text-gray-700 dark:text-gray-300">Cancelar</button>
-                            <button onClick={editingUser ? handleUpdateUser : handleCreateUser} disabled={submitting} className="flex-1 h-12 rounded-xl bg-primary text-white font-bold disabled:opacity-50">
-                                {submitting ? (editingUser ? 'Atualizando...' : 'Criando...') : (editingUser ? 'Atualizar Usuário' : 'Criar Usuário')}
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <>
-                        <button onClick={() => setIsAdding(true)} className="w-full h-12 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors mb-4 flex items-center justify-center gap-2">
-                            <span className="material-symbols-outlined">add</span>
-                            Adicionar Novo Usuário
-                        </button>
-
+                <div className="flex-1 overflow-y-auto p-4">
+                    {(isAdding || editingUser) ? (
                         <div className="space-y-3">
-                            {loading ? <p className="text-center text-gray-500">Carregando...</p> : users.map(u => (
-                                <div key={u.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-                                    <div className="flex-1">
-                                        <p className="font-bold text-[#111418] dark:text-white">{u.name}</p>
-                                        <p className="text-sm text-gray-500">@{u.username} • {u.email}</p>
-                                        <span className="inline-block mt-1 px-2 py-0.5 bg-primary/10 text-primary text-xs font-bold rounded">
-                                            {u.role === 'admin' ? 'Administrador' : 'Usuário'}
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleEditUser(u)}
-                                            className="size-10 flex items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
-                                            title="Editar usuário"
-                                        >
-                                            <span className="material-symbols-outlined text-lg">edit</span>
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteUser(u.id, u.name)}
-                                            className="size-10 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                            title="Excluir usuário"
-                                        >
-                                            <span className="material-symbols-outlined text-lg">delete</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                            <p className="text-xs font-bold text-primary">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input placeholder="Nome Completo" className={inputClass} value={name} onChange={e => setName(e.target.value)} />
+                                <input placeholder="Usuário (Login)" className={inputClass} value={username} onChange={e => setUsername(e.target.value)} />
+                                <input placeholder="E-mail" type="email" className={inputClass} value={email} onChange={e => setEmail(e.target.value)} />
+                                <input placeholder={editingUser ? "Nova senha (vazio = manter)" : "Senha"} type="password" className={inputClass} value={password} onChange={e => setPassword(e.target.value)} />
+                                <select className={inputClass} value={role} onChange={e => setRole(e.target.value as any)}>
+                                    <option value="user">Usuário Padrão</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                                <button onClick={resetForm} className="flex-1 h-8 rounded border border-gray-300 dark:border-gray-600 text-xs font-bold text-gray-700 dark:text-gray-300">Cancelar</button>
+                                <button onClick={editingUser ? handleUpdateUser : handleCreateUser} disabled={submitting} className="flex-[2] h-8 rounded bg-primary text-white text-xs font-bold disabled:opacity-50">
+                                    {submitting ? (editingUser ? 'Atualizando...' : 'Criando...') : (editingUser ? 'Atualizar' : 'Criar Usuário')}
+                                </button>
+                            </div>
                         </div>
-                    </>
-                )}
+                    ) : (
+                        <>
+                            <button onClick={() => setIsAdding(true)} className="w-full h-8 rounded border border-primary/30 bg-primary/5 text-primary font-bold text-xs hover:bg-primary/10 transition-colors mb-3 flex items-center justify-center gap-1.5">
+                                <span className="material-symbols-outlined text-[14px]">add</span>
+                                Adicionar Usuário
+                            </button>
+
+                            {/* Users list */}
+                            <div className="border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                                {loading ? (
+                                    <p className="text-center text-xs text-gray-500 py-6">Carregando...</p>
+                                ) : users.map((u, idx) => (
+                                    <div key={u.id} className={`flex items-center justify-between px-3 py-2 ${idx > 0 ? 'border-t border-gray-100 dark:border-gray-800' : ''}`}>
+                                        <div>
+                                            <p className="text-xs font-semibold text-gray-900 dark:text-white">{u.name}</p>
+                                            <p className="text-[10px] text-gray-500">@{u.username} · {u.email}</p>
+                                            <span className="inline-block mt-0.5 px-1.5 py-px bg-primary/10 text-primary text-[9px] font-bold rounded">
+                                                {u.role === 'admin' ? 'Admin' : 'Usuário'}
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            <button
+                                                onClick={() => handleEditUser(u)}
+                                                className="w-7 h-7 flex items-center justify-center rounded bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[14px]">edit</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDeleteUser(u.id, u.name)}
+                                                className="w-7 h-7 flex items-center justify-center rounded bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[14px]">delete</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

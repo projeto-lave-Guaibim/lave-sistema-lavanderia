@@ -24,23 +24,33 @@
             colors: {
               "primary": "#307de8",
               "primary-dark": "#1a5bb8",
-              "background-light": "#f0f2f5",
+              "background-light": "#eef0f3",
               "background-dark": "#111821",
-              "surface-light": "#f8f9fa",
+              "surface-light": "#ffffff",
               "surface-dark": "#1a222d",
               "success": "#16a34a",
               "danger": "#dc2626",
               "whatsapp": "#25D366"
             },
             fontFamily: {
-              display: ["Inter", "sans-serif"],
-              sans: ["Inter", "sans-serif"],
+              display: ["'Segoe UI'", "Arial", "sans-serif"],
+              sans: ["'Segoe UI'", "Arial", "sans-serif"],
+            },
+            fontSize: {
+              'xs':  ['0.70rem',  { lineHeight: '1rem' }],
+              'sm':  ['0.775rem', { lineHeight: '1.1rem' }],
+              'base':['0.85rem',  { lineHeight: '1.25rem' }],
+              'lg':  ['0.95rem',  { lineHeight: '1.35rem' }],
+              'xl':  ['1.05rem',  { lineHeight: '1.45rem' }],
+              '2xl': ['1.2rem',   { lineHeight: '1.6rem' }],
+              '3xl': ['1.4rem',   { lineHeight: '1.75rem' }],
             },
             borderRadius: {
-              "DEFAULT": "0.25rem", 
-              "lg": "0.5rem", 
-              "xl": "0.75rem", 
-              "2xl": "1rem",
+              "DEFAULT": "0.2rem",
+              "sm": "0.15rem",
+              "lg": "0.3rem",
+              "xl": "0.4rem",
+              "2xl": "0.5rem",
               "full": "9999px"
             },
           },
@@ -48,30 +58,72 @@
       }
     </script>
     <style>
+      /* Base system font stack — matches Silbeck's dense ERP feel */
+      * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
-        font-family: 'Inter', sans-serif;
-        -webkit-font-smoothing: antialiased;
+        font-family: 'Segoe UI', Arial, system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.35;
+        -webkit-font-smoothing: subpixel-antialiased;
         min-height: 100vh;
         min-height: 100dvh;
+        letter-spacing: 0;
       }
+
+      h1, h2, h3, h4 {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+
+      input, select, textarea, button {
+        font-family: inherit;
+        font-size: 13px;
+      }
+
+      label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+      }
+
+      td, th {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
+
+      .material-symbols-outlined {
+        font-family: 'Material Symbols Outlined';
+        font-weight: normal;
+        font-style: normal;
+        font-size: 20px;
+        line-height: 1;
+        letter-spacing: normal;
+        text-transform: none;
+        display: inline-block;
+        white-space: nowrap;
+        word-wrap: normal;
+        direction: ltr;
+        -webkit-font-feature-settings: 'liga';
+        font-feature-settings: 'liga';
+        -webkit-font-smoothing: antialiased;
+      }
+
       .material-symbols-outlined.filled {
         font-variation-settings: 'FILL' 1;
       }
-       /* Custom scrollbar hide for cleaner mobile look */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-      }
+
+      /* Compact ERP scrollbar */
+      ::-webkit-scrollbar { width: 6px; height: 6px; }
+      ::-webkit-scrollbar-track { background: #f0f2f5; }
+      ::-webkit-scrollbar-thumb { background: #b0bec5; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #78909c; }
+
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
       @media print {
-        body {
-          background-color: #fff;
-        }
-        .no-print {
-          display: none !important;
-        }
+        body { background-color: #fff; }
+        .no-print { display: none !important; }
         .printable-area {
           box-shadow: none !important;
           border: none !important;

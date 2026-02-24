@@ -31,30 +31,31 @@ const LoginScreen: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background-light to-primary/5 dark:from-background-dark dark:via-background-dark dark:to-primary/10 flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <div className="inline-flex size-20 items-center justify-center bg-gradient-to-br from-primary to-primary-dark rounded-3xl shadow-2xl shadow-primary/30 mb-4">
-                        <span className="material-symbols-outlined filled text-white text-5xl">local_laundry_service</span>
+        <div className="min-h-screen bg-[#eef0f3] dark:bg-[#111821] flex items-center justify-center p-4">
+            <div className="w-full max-w-sm">
+                {/* Brand */}
+                <div className="text-center mb-6">
+                    <div className="inline-flex w-14 h-14 items-center justify-center bg-primary rounded mb-3">
+                        <span className="material-symbols-outlined filled text-white text-3xl">local_laundry_service</span>
                     </div>
-                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent mb-2">
-                        Lavê
-                    </h1>
-                    <p className="text-gray-600 dark:text-gray-400 italic">Cuidar bem é a nossa essência.</p>
+                    <h1 className="text-2xl font-bold text-primary tracking-tight">Lavê</h1>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Sistema de Gestão de Lavanderia</p>
                 </div>
 
-                <div className="bg-white dark:bg-surface-dark rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-700">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
-                        Entrar no Sistema
-                    </h2>
+                {/* Card */}
+                <div className="bg-white dark:bg-[#1a222d] rounded border border-gray-200 dark:border-gray-700 shadow-sm">
+                    {/* Card header */}
+                    <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] rounded-t">
+                        <h2 className="text-sm font-bold text-gray-700 dark:text-gray-200">Acesso ao Sistema</h2>
+                    </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="p-5 space-y-4">
                         <div>
-                            <label htmlFor="username" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label htmlFor="username" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">
                                 Usuário
                             </label>
                             <div className="relative">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
                                     person
                                 </span>
                                 <input
@@ -62,19 +63,20 @@ const LoginScreen: React.FC = () => {
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                    className="w-full pl-8 pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
                                     placeholder="Digite seu usuário"
                                     disabled={loading}
+                                    autoComplete="username"
                                 />
                             </div>
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <label htmlFor="password" className="block text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 uppercase tracking-wide">
                                 Senha
                             </label>
                             <div className="relative">
-                                <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
                                     lock
                                 </span>
                                 <input
@@ -82,33 +84,34 @@ const LoginScreen: React.FC = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                                    className="w-full pl-8 pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
                                     placeholder="Digite sua senha"
                                     disabled={loading}
+                                    autoComplete="current-password"
                                 />
                             </div>
                         </div>
 
                         {error && (
-                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2">
-                                <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-lg">error</span>
-                                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-2.5 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-[16px]">error</span>
+                                <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
                             </div>
                         )}
 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-primary to-primary-dark text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                            className="w-full bg-primary text-white font-bold h-9 px-4 rounded text-sm shadow-sm hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>
-                                    <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                                    <span className="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
                                     Entrando...
                                 </>
                             ) : (
                                 <>
-                                    <span className="material-symbols-outlined">login</span>
+                                    <span className="material-symbols-outlined text-[16px]">login</span>
                                     Entrar
                                 </>
                             )}
@@ -116,8 +119,8 @@ const LoginScreen: React.FC = () => {
                     </form>
                 </div>
 
-                <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-6">
-                    © 2024 Lavê. Todos os direitos reservados.
+                <p className="text-center text-[10px] text-gray-400 mt-4">
+                    © {new Date().getFullYear()} Lavê. Todos os direitos reservados.
                 </p>
             </div>
         </div>

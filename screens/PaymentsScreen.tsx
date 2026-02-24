@@ -198,7 +198,7 @@ export const PaymentsScreen: React.FC = () => {
                 }
             />
             
-            <div className="flex gap-3 px-4 py-3 overflow-x-auto no-scrollbar items-center bg-white dark:bg-[#111821] shadow-sm z-10 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex gap-1.5 px-3 py-2 overflow-x-auto no-scrollbar items-center bg-white dark:bg-[#111821] border-b border-gray-200 dark:border-gray-700">
                 {[
                     { label: 'Todos', value: 'all' },
                     { label: 'Receita', value: 'Receita' },
@@ -208,145 +208,99 @@ export const PaymentsScreen: React.FC = () => {
                     { label: 'Débito', value: 'Débito' },
                     { label: 'Dinheiro', value: 'Dinheiro' }
                 ].map(filter => (
-                    <button 
-                        key={filter.value} 
-                        onClick={() => setFilterMethod(filter.value)} 
-                        className={`flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full px-5 transition-colors ${filterMethod === filter.value ? 'bg-primary text-white shadow-md shadow-primary/30' : 'bg-[#f0f2f4] dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-gray-300'}`}
+                    <button
+                        key={filter.value}
+                        onClick={() => setFilterMethod(filter.value)}
+                        className={`flex h-7 shrink-0 items-center px-3 rounded transition-colors text-xs font-semibold ${
+                            filterMethod === filter.value
+                                ? 'bg-primary text-white'
+                                : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                        }`}
                     >
-                        <p className="text-sm font-medium leading-normal">{filter.label}</p>
+                        {filter.label}
                     </button>
                 ))}
             </div>
 
-            <main className="flex-1 overflow-y-auto no-scrollbar bg-background-light dark:bg-background-dark p-4 pb-24">
+            <main className="flex-1 overflow-y-auto no-scrollbar bg-background-light dark:bg-background-dark p-3 pb-24">
                 {loading ? (
                     <div className="flex justify-center items-center h-40">
-                        <span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span>
+                        <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
                     </div>
                 ) : filteredPayments.length === 0 ? (
-                    <div className="text-center text-gray-500 mt-10">
-                        <span className="material-symbols-outlined text-6xl mb-4 block">payments</span>
-                        <p className="font-bold">Nenhum pagamento encontrado</p>
+                    <div className="text-center text-gray-400 mt-10">
+                        <span className="material-symbols-outlined text-4xl mb-2 block">payments</span>
+                        <p className="text-xs font-semibold">Nenhum pagamento encontrado</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        {filteredPayments.map((payment) => {
+                    <div className="flex flex-col rounded border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-[#1a222d]">
+                        {filteredPayments.map((payment, idx) => {
                             if (payment.type === 'order') {
-                                // Render Order Payment
                                 const order = payment.originalData as Order;
                                 return (
-                                    <div 
+                                    <div
                                         key={payment.id}
                                         onClick={() => navigate(`/orders/${order.id}`)}
-                                        className="bg-white dark:bg-[#1a222d] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow cursor-pointer"
+                                        className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-blue-50 dark:hover:bg-[#232c38] transition-colors ${
+                                            idx < filteredPayments.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''
+                                        }`}
                                     >
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="text-2xl">{getPaymentMethodIcon(payment.method || '')}</span>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-[#111418] dark:text-white">
-                                                            {payment.description}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {payment.date.toLocaleDateString('pt-BR')} às {payment.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400">{payment.clientName}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-xs text-gray-500 mb-1">
-                                                    {payment.method}
-                                                    {payment.feePercentage && payment.feePercentage > 0 && <span className="text-orange-500"> ({payment.feePercentage}%)</span>}
-                                                </p>
-                                                <p className="text-lg font-bold text-primary">R$ {(payment.netValue || payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                            </div>
+                                        <div className="w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center shrink-0">
+                                            <span className="text-green-600 text-[12px]">{getPaymentMethodIcon(payment.method || '')}</span>
                                         </div>
-
-                                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                                            <div>
-                                                <p className="text-xs text-gray-500">Valor Total</p>
-                                                <p className="text-sm font-semibold text-[#111418] dark:text-white">R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                            </div>
-                                            {payment.fee && payment.fee > 0 && (
-                                                <div>
-                                                    <p className="text-xs text-gray-500">Taxa ({payment.feePercentage}%)</p>
-                                                    <p className="text-sm font-semibold text-red-500">- R$ {payment.fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                                </div>
-                                            )}
-                                            <div>
-                                                <p className="text-xs text-gray-500">Líquido</p>
-                                                <p className="text-sm font-semibold text-green-600">R$ {(payment.netValue || payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                            </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-semibold text-gray-800 dark:text-white line-clamp-1">{payment.description} — {payment.clientName}</p>
+                                            <p className="text-[10px] text-gray-400">{payment.date.toLocaleDateString('pt-BR')} · {payment.method}
+                                                {payment.feePercentage && payment.feePercentage > 0 && <span className="text-orange-500"> ({payment.feePercentage}%)</span>}
+                                            </p>
                                         </div>
-
-                                        <div className="mt-2 flex items-center justify-between">
-                                            <span className="text-xs text-gray-500">{order.service}</span>
-                                            <span className="material-symbols-outlined text-gray-400 text-sm">chevron_right</span>
+                                        <div className="shrink-0 text-right">
+                                            <p className="text-xs font-bold text-primary">R$ {(payment.netValue || payment.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                            {payment.fee && payment.fee > 0 && <p className="text-[10px] text-red-500">-{payment.fee.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>}
                                         </div>
+                                        <span className="material-symbols-outlined text-gray-300 text-[14px]">chevron_right</span>
                                     </div>
                                 );
                             } else {
                                 // Render Finance Transaction
                                 const transaction = payment.originalData as Transaction;
                                 const isReceita = payment.transactionType === TransactionType.Receita;
-                                
                                 return (
-                                    <div 
+                                    <div
                                         key={payment.id}
-                                        className="bg-white dark:bg-[#1a222d] rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow relative"
+                                        className={`flex items-center gap-3 px-3 py-2 relative hover:bg-blue-50 dark:hover:bg-[#232c38] transition-colors ${
+                                            idx < filteredPayments.length - 1 ? 'border-b border-gray-100 dark:border-gray-700' : ''
+                                        }`}
                                     >
-                                        {/* Discreet action buttons in corner */}
-                                        <div className="absolute top-3 right-3 flex gap-1">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/finance/edit/${transaction.id}`);
-                                                }}
-                                                className="size-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-500 transition-colors opacity-60 hover:opacity-100"
-                                                title="Editar movimentação"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">edit</span>
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleDeleteFinance(transaction.id);
-                                                }}
-                                                className="size-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-500 transition-colors opacity-60 hover:opacity-100"
-                                                title="Excluir movimentação"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">delete</span>
-                                            </button>
+                                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                                            isReceita ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'
+                                        }`}>
+                                            <span className={`material-symbols-outlined text-[14px] ${
+                                                isReceita ? 'text-green-600' : 'text-red-500'
+                                            }`}>{isReceita ? 'trending_up' : 'trending_down'}</span>
                                         </div>
-
-                                        <div className="flex justify-between items-start mb-3 pr-16">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <div className={`size-10 rounded-full flex items-center justify-center ${isReceita ? 'bg-green-100 dark:bg-green-900/20' : 'bg-red-100 dark:bg-red-900/20'}`}>
-                                                        <span className={`material-symbols-outlined ${isReceita ? 'text-green-600' : 'text-red-600'}`}>
-                                                            {isReceita ? 'trending_up' : 'trending_down'}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-[#111418] dark:text-white">
-                                                            {payment.description}
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            {payment.date.toLocaleDateString('pt-BR')}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <p className="text-xs text-gray-500 ml-12">
-                                                    {isReceita ? 'Receita' : 'Despesa'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className={`text-lg font-bold ${isReceita ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {isReceita ? '+' : '-'} R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                </p>
-                                            </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-semibold text-gray-800 dark:text-white line-clamp-1">{payment.description}</p>
+                                            <p className="text-[10px] text-gray-400">{payment.date.toLocaleDateString('pt-BR')} · {isReceita ? 'Receita' : 'Despesa'}</p>
+                                        </div>
+                                        <p className={`text-xs font-bold shrink-0 ${
+                                            isReceita ? 'text-green-600' : 'text-red-500'
+                                        }`}>{isReceita ? '+' : '-'} R$ {payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                        <div className="flex gap-0.5 shrink-0">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); navigate(`/finance/edit/${transaction.id}`); }}
+                                                className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                                                title="Editar"
+                                            >
+                                                <span className="material-symbols-outlined text-[13px]">edit</span>
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteFinance(transaction.id); }}
+                                                className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                title="Excluir"
+                                            >
+                                                <span className="material-symbols-outlined text-[13px]">delete</span>
+                                            </button>
                                         </div>
                                     </div>
                                 );

@@ -28,6 +28,7 @@ export interface Client {
   neighborhood?: string;
   cityCode?: string;
   state?: string;
+  isContract?: boolean; // Contract Pricing Model
 }
 
 export interface Order {
