@@ -236,6 +236,8 @@ export const OrdersListScreen: React.FC = () => {
 
 import { catalogService } from '../services/catalogService';
 import { Service, CatalogItem, Extra } from '../types';
+import { RevitalizeStainForm } from '../components/RevitalizeStainForm';
+import { RevitalizePiece, calcRevitalizeTotal, serializeRevitalize } from '../utils/revitalizeUtils';
 
 export const NewOrderScreen: React.FC = () => {
     const navigate = useNavigate();
@@ -267,6 +269,8 @@ export const NewOrderScreen: React.FC = () => {
     const [touristName, setTouristName] = useState('');
     const [touristContact, setTouristContact] = useState('');
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+    // Lavê Revitalize+ state
+    const [revitalizePieces, setRevitalizePieces] = useState<RevitalizePiece[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -505,13 +509,17 @@ export const NewOrderScreen: React.FC = () => {
             <header className="flex items-center bg-surface-light dark:bg-surface-dark px-4 py-4 justify-between border-b border-gray-200 dark:border-gray-800 shrink-0 z-20">
                 <button onClick={() => {
                     if (step === 11) setStep(1);
+                    else if (step === 31) setStep(2);
                     else if (step > 1) setStep(step - 1);
                     else navigate(-1);
                 }} className="flex size-10 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-[#111418] dark:text-white"><span className="material-symbols-outlined text-2xl">arrow_back</span></button>
                 <div className="flex-1 flex justify-center gap-2">
-                    {[1, 2, 3, 4, 5].map(s => (
-                        <div key={s} className={`h-2 w-8 rounded-full transition-colors ${step >= s ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
-                    ))}
+                    {[1, 2, 3, 4, 5].map(s => {
+                        const displayStep = step === 31 ? 2 : step === 11 ? 1 : step;
+                        return (
+                            <div key={s} className={`h-2 w-8 rounded-full transition-colors ${displayStep >= s ? 'bg-primary' : 'bg-gray-200 dark:bg-gray-700'}`}></div>
+                        );
+                    })}
                 </div>
                 <div className="size-10"></div>
             </header>
@@ -596,17 +604,91 @@ export const NewOrderScreen: React.FC = () => {
                     <div className="space-y-4 animate-in slide-in-from-right duration-300">
                         <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Qual o serviço?</h2>
                         <div className="grid gap-3">
-                            {services.map(service => (
-                                <button key={service.id} onClick={() => { setSelectedService(service); setStep(3); }} className="flex items-center gap-4 p-4 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 hover:border-primary transition-colors shadow-sm text-left group">
-                                    <div className="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors"><span className="material-symbols-outlined text-3xl">{service.icon || 'local_laundry_service'}</span></div>
-                                    <div className="flex-1">
-                                        <span className="block font-bold text-[#111418] dark:text-white text-lg">{service.name}</span>
-                                        <span className="text-sm text-gray-500 group-hover:text-primary/80">{service.type === 'kg' ? 'Cobrado por Kg' : 'Cobrado por Peça'}</span>
-                                    </div>
-                                    <span className="material-symbols-outlined text-gray-300 group-hover:text-primary">chevron_right</span>
-                                </button>
-                            ))}
+                            {services.map(service => {
+                                const isRevitalize = service.name.toLowerCase().includes('revitalize');
+                                return (
+                                    <button key={service.id} onClick={() => {
+                                        setSelectedService(service);
+                                        if (isRevitalize) {
+                                            setRevitalizePieces([]);
+                                            setStep(31); // Revitalize special step
+                                        } else {
+                                            setStep(3);
+                                        }
+                                    }} className="flex items-center gap-4 p-4 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-100 dark:border-gray-800 hover:border-primary transition-colors shadow-sm text-left group">
+                                        <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${
+                                            isRevitalize
+                                                ? 'bg-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white dark:bg-purple-900/20 dark:text-purple-400'
+                                                : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
+                                        }`}>
+                                            <span className="material-symbols-outlined text-3xl">{isRevitalize ? 'science' : (service.icon || 'local_laundry_service')}</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <span className="block font-bold text-[#111418] dark:text-white text-lg">{service.name}</span>
+                                            <span className="text-sm text-gray-500 group-hover:text-primary/80">
+                                                {isRevitalize ? 'Por mancha • Pós-resultado' : (service.type === 'kg' ? 'Cobrado por Kg' : 'Cobrado por Peça')}
+                                            </span>
+                                            {isRevitalize && (
+                                                <span className="inline-block mt-1 px-2 py-0.5 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 text-[10px] font-bold rounded">
+                                                    Essencial R$4,90 • Avançado R$9,90 • Extremo R$24,90
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="material-symbols-outlined text-gray-300 group-hover:text-primary">chevron_right</span>
+                                    </button>
+                                );
+                            })}
                         </div>
+                    </div>
+                )}
+
+                {/* ── STEP 31: Lavê Revitalize+ Stain Triage ── */}
+                {step === 31 && selectedService && (
+                    <div className="space-y-4 animate-in slide-in-from-right duration-300">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-purple-600 dark:text-purple-400">science</span>
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-bold text-[#111418] dark:text-white">Lavê Revitalize+ — Triagem</h2>
+                                <p className="text-xs text-gray-500">Adicione as peças e identifique cada mancha</p>
+                            </div>
+                        </div>
+
+                        <RevitalizeStainForm
+                            pieces={revitalizePieces}
+                            onChange={setRevitalizePieces}
+                            clientName={selectedClient?.name}
+                            clientPhone={selectedClient?.phone}
+                            laudoRef={orderDate.replace(/-/g, '')}
+                        />
+
+                        {revitalizePieces.length > 0 && revitalizePieces.some(p => p.stains.length > 0) && (
+                            <button
+                                onClick={() => {
+                                    const total = calcRevitalizeTotal(revitalizePieces);
+                                    const totalStains = revitalizePieces.reduce((s, p) => s + p.stains.length, 0);
+                                    const serialized = serializeRevitalize(revitalizePieces);
+                                    const newItem: OrderItem = {
+                                        service_name: `Revitalize+ (${revitalizePieces.length} peça(s), ${totalStains} mancha(s))`,
+                                        quantity: totalStains,
+                                        unit_price: total / totalStains,
+                                        subtotal: total,
+                                    };
+                                    setOrderItems(prev => [...prev, newItem]);
+                                    // Store serialized data in details for record
+                                    setDetails(prev => (prev ? prev + '\n' : '') + serialized);
+                                    // Reset for possibly adding more services
+                                    setSelectedService(null);
+                                    setRevitalizePieces([]);
+                                    setStep(4); // go to details step
+                                }}
+                                className="w-full h-12 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold flex items-center justify-center gap-2 transition-colors shadow-lg shadow-purple-500/20"
+                            >
+                                <span className="material-symbols-outlined">check_circle</span>
+                                Confirmar Triagem — R$ {calcRevitalizeTotal(revitalizePieces).toFixed(2)}
+                            </button>
+                        )}
                     </div>
                 )}
 
