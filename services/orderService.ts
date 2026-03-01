@@ -26,7 +26,7 @@ export const orderService = {
                 service: o.service_type, 
                 details: o.description, 
                 payment_method: o.payment_method,
-                timestamp: new Date(o.created_at).toLocaleString('pt-BR'), 
+                timestamp: o.created_at, // Keep raw ISO for date operations
                 status: o.status,
                 value: Number(o.value),
                 extras: o.extras || [],
@@ -51,18 +51,30 @@ export const orderService = {
     },
 
     create: async (order: Order) => {
+        const insertData: any = {
+            client_id: order.client.id,
+            client_name: order.client.name,
+            service_type: order.service,
+            description: order.details,
+            status: order.status,
+            value: order.value,
+            extras: order.extras || [],
+            discount: order.discount || 0,
+        };
+
+        // Salvar payment_method quando definido (ex: 'Contrato Mensal')
+        if (order.payment_method) {
+            insertData.payment_method = order.payment_method;
+        }
+
+        // Permitir definir timestamp personalizado
+        if (order.timestamp && !isNaN(new Date(order.timestamp).getTime())) {
+            insertData.created_at = order.timestamp;
+        }
+
         const { data, error } = await supabase
             .from('orders')
-            .insert([{
-                client_id: order.client.id,
-                client_name: order.client.name,
-                service_type: order.service,
-                description: order.details,
-                status: order.status,
-                value: order.value,
-                extras: order.extras || [],
-                discount: order.discount || 0
-            }])
+            .insert([insertData])
             .select()
             .single();
 

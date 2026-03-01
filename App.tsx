@@ -23,6 +23,7 @@ import { NewOrderScreenV2 } from './screens/NewOrderScreenV2';
 import NewFinanceScreen from './screens/NewFinanceScreen';
 import EditFinanceScreen from './screens/EditFinanceScreen';
 import { ContractClosingScreen } from './screens/ContractClosingScreen';
+import { InternalMetricsScreen } from './screens/InternalMetricsScreen';
 
 
 import Sidebar from './components/Sidebar';
@@ -72,6 +73,7 @@ const App = () => {
                             <Route path="finance/edit/:transactionId" element={<EditFinanceScreen />} />
                             <Route path="finance/reports" element={<FinanceReportsScreen />} />
                             <Route path="finance/contracts" element={<ContractClosingScreen />} />
+                            <Route path="metrics" element={<InternalMetricsScreen />} />
                             <Route path="profile" element={<UserScreen />} />
                         </Route>
                     </Routes>

@@ -16,6 +16,7 @@ const navItems = [
     { path: '/items', icon: 'checkroom', label: 'Peças' },
     { path: '/payments', icon: 'account_balance_wallet', label: 'Pagamentos' },
     { path: '/finance/reports', icon: 'assessment', label: 'Relatórios' },
+    { path: '/metrics', icon: 'monitoring', label: 'Métricas' },
     { path: '/finance/contracts', icon: 'receipt_long', label: 'Contratos' },
 ];
 

@@ -115,7 +115,7 @@ export const StockControlScreen: React.FC = () => {
                                 <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
                                     <span className="material-symbols-outlined text-gray-400 text-[16px]">search</span>
                                 </div>
-                                <input className="w-full h-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a222d] text-xs pl-8 pr-3 focus:ring-primary focus:border-primary transition-shadow placeholder:text-gray-400" placeholder="Buscar produto..." type="text" />
+                                <input className="w-full h-8 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#1a222d] text-xs pr-3 focus:ring-primary focus:border-primary transition-shadow placeholder:text-gray-400" style={{ paddingLeft: '36px' }} placeholder="Buscar produto..." type="text" />
                             </div>
                         </div>
                         {/* Stock list */}
@@ -157,7 +157,7 @@ export const AddStockItemScreen: React.FC = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: '',
-        category: 'Lavagem',
+        category: '5.03 Detergente Neutro Concentrado',
         volume: '',
         quantity: '',
         minQuantity: '',
@@ -192,7 +192,9 @@ export const AddStockItemScreen: React.FC = () => {
                 date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
                 amount: parseFloat(formData.cost),
                 paid: true,
-                icon: 'shopping_cart'
+                icon: 'shopping_cart',
+                category: formData.category,
+                group: 'G05 - Custos Variáveis Operacionais'
             });
 
             navigate('/stock');
@@ -225,11 +227,21 @@ export const AddStockItemScreen: React.FC = () => {
                             <div>
                                 <label className="normal-case text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block" style={{textTransform:'none', letterSpacing:'normal'}}>Categoria</label>
                                 <select name="category" value={formData.category} onChange={handleChange} className="w-full rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white h-8 px-2 text-xs focus:border-primary focus:ring-1 focus:ring-primary/20">
-                                    <option>Lavagem</option>
-                                    <option>Finalização</option>
-                                    <option>Tira Manchas</option>
-                                    <option>Embalagem</option>
-                                    <option>Outros</option>
+                                    <option>5.01 Energia Elétrica — Consumo Variável</option>
+                                    <option>5.02 Água e Saneamento — Consumo Variável</option>
+                                    <option>5.03 Detergente Neutro Concentrado</option>
+                                    <option>5.04 Alvejante de Oxigênio Ativo (sem cloro)</option>
+                                    <option>5.05 Peróxido de Hidrogênio</option>
+                                    <option>5.06 Produto Específico para Mofo</option>
+                                    <option>5.07 Álcool Isopropílico</option>
+                                    <option>5.08 Bicarbonato de Sódio</option>
+                                    <option>5.09 Ácido Oxálico</option>
+                                    <option>5.10 Sabão em Pó</option>
+                                    <option>5.11 Vinagre Branco</option>
+                                    <option>5.12 Embalagens — Sacolas e Papel de Embrulho</option>
+                                    <option>5.13 Etiquetas e Material de Identificação</option>
+                                    <option>5.14 Fita Crepe e Caneta Permanente</option>
+                                    <option>5.15 Materiais de Limpeza do Espaço</option>
                                 </select>
                             </div>
                         </div>
@@ -268,6 +280,7 @@ export const EditStockItemScreen: React.FC = () => {
     const { itemId } = useParams();
     const [item, setItem] = useState<StockItem | undefined>(undefined);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const fetchItem = async () => {
@@ -291,6 +304,24 @@ export const EditStockItemScreen: React.FC = () => {
         }
     };
     
+    const handleSave = async () => {
+        if (!item) return;
+        setSaving(true);
+        try {
+            await stockService.update({
+                ...item,
+                quantity: Number(item.quantity) || 0,
+                minQuantity: Number(item.minQuantity) || 0
+            });
+            navigate('/stock');
+        } catch (error) {
+            console.error("Failed to update item", error);
+            alert("Erro ao salvar alterações.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) return <div className="flex justify-center items-center h-full"><span className="material-symbols-outlined animate-spin text-primary text-4xl">progress_activity</span></div>;
     if (!item) return <div className="flex items-center justify-center h-full"><p className="text-gray-500 dark:text-gray-400">Insumo não encontrado.</p></div>;
 
@@ -312,11 +343,21 @@ export const EditStockItemScreen: React.FC = () => {
                             <div className="relative">
                                 <label className="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal pb-2 block">Categoria</label>
                                 <select name="category" value={item.category} onChange={handleInputChange} className="form-select w-full rounded-lg text-gray-900 dark:text-white placeholder:text-gray-400 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:border-primary focus:ring-1 focus:ring-primary/20 h-12 px-4 text-base transition-all appearance-none">
-                                    <option>Lavagem</option>
-                                    <option>Finalização</option>
-                                    <option>Tira Manchas</option>
-                                    <option>Embalagem</option>
-                                    <option>Outros</option>
+                                    <option>5.01 Energia Elétrica — Consumo Variável</option>
+                                    <option>5.02 Água e Saneamento — Consumo Variável</option>
+                                    <option>5.03 Detergente Neutro Concentrado</option>
+                                    <option>5.04 Alvejante de Oxigênio Ativo (sem cloro)</option>
+                                    <option>5.05 Peróxido de Hidrogênio</option>
+                                    <option>5.06 Produto Específico para Mofo</option>
+                                    <option>5.07 Álcool Isopropílico</option>
+                                    <option>5.08 Bicarbonato de Sódio</option>
+                                    <option>5.09 Ácido Oxálico</option>
+                                    <option>5.10 Sabão em Pó</option>
+                                    <option>5.11 Vinagre Branco</option>
+                                    <option>5.12 Embalagens — Sacolas e Papel de Embrulho</option>
+                                    <option>5.13 Etiquetas e Material de Identificação</option>
+                                    <option>5.14 Fita Crepe e Caneta Permanente</option>
+                                    <option>5.15 Materiais de Limpeza do Espaço</option>
                                 </select>
                                 <div className="absolute right-3 top-10 pointer-events-none text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
                             </div>
@@ -337,7 +378,9 @@ export const EditStockItemScreen: React.FC = () => {
                     </section>
                     <div className="pt-4 flex items-center justify-end gap-3">
                         <button onClick={() => navigate(-1)} className="h-12 px-6 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-sm hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">Cancelar</button>
-                        <button onClick={() => navigate('/stock')} className="h-12 px-8 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-dark shadow-md shadow-primary/20 transition-all">Salvar Alterações</button>
+                        <button onClick={handleSave} disabled={saving} className="h-12 px-8 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary-dark shadow-md shadow-primary/20 transition-all disabled:opacity-50">
+                            {saving ? 'Salvando...' : 'Salvar Alterações'}
+                        </button>
                     </div>
                 </div>
             </main>

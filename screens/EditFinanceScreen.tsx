@@ -196,7 +196,7 @@ const EditFinanceScreen: React.FC = () => {
                                 <div>
                                     <label className={labelClass}>Valor (R$)</label>
                                     <div className="relative">
-                                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">R$</span>
+                                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold pointer-events-none select-none">R$</span>
                                         <input
                                             type="number"
                                             value={amount}
@@ -204,7 +204,8 @@ const EditFinanceScreen: React.FC = () => {
                                             placeholder="0,00"
                                             step="0.01"
                                             min="0"
-                                            className={`${fieldClass} pl-7 font-bold`}
+                                            className={`${fieldClass} font-bold`}
+                                            style={{ paddingLeft: '36px' }}
                                         />
                                     </div>
                                 </div>

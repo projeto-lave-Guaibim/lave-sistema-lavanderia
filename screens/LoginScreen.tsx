@@ -55,7 +55,7 @@ const LoginScreen: React.FC = () => {
                                 Usuário
                             </label>
                             <div className="relative">
-                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{ fontSize: '16px' }}>
                                     person
                                 </span>
                                 <input
@@ -63,7 +63,8 @@ const LoginScreen: React.FC = () => {
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full pl-8 pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
+                                    className="w-full pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
+                                    style={{ paddingLeft: '42px' }}
                                     placeholder="Digite seu usuário"
                                     disabled={loading}
                                     autoComplete="username"
@@ -76,7 +77,7 @@ const LoginScreen: React.FC = () => {
                                 Senha
                             </label>
                             <div className="relative">
-                                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[16px]">
+                                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" style={{ fontSize: '16px' }}>
                                     lock
                                 </span>
                                 <input
@@ -84,7 +85,8 @@ const LoginScreen: React.FC = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-8 pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
+                                    className="w-full pr-3 h-9 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary/20 text-sm transition-all"
+                                    style={{ paddingLeft: '42px' }}
                                     placeholder="Digite sua senha"
                                     disabled={loading}
                                     autoComplete="current-password"

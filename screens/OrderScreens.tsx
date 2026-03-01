@@ -167,23 +167,25 @@ export const OrdersListScreen: React.FC = () => {
             {/* Search Filters */}
             <div className="px-4 pt-3 pb-1 bg-white dark:bg-[#111821] flex gap-2">
                 <div className="flex-1 relative">
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">search</span>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">search</span>
                     <input 
                         type="text" 
                         placeholder="Nome ou Nº Pedido" 
                         value={clientSearch}
                         onChange={(e) => setClientSearch(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                        className="w-full pr-3 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                        style={{ paddingLeft: '40px' }}
                     />
                 </div>
                 <div className="w-28 relative">
-                    <span className="text-gray-400 text-xs absolute left-2 top-1/2 -translate-y-1/2 font-bold">R$</span>
+                    <span className="text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 font-bold pointer-events-none select-none" style={{ fontSize: '10px' }}>R$</span>
                     <input 
                         type="number" 
                         placeholder="Valor" 
                         value={valueSearch}
                         onChange={(e) => setValueSearch(e.target.value)}
-                        className="w-full pl-7 pr-2 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                        className="w-full pr-2 py-2 bg-gray-100 dark:bg-gray-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none text-[#111418] dark:text-white placeholder-gray-500"
+                        style={{ paddingLeft: '32px' }}
                         step="0.01"
                     />
                 </div>
@@ -321,7 +323,9 @@ export const NewOrderScreen: React.FC = () => {
         let total = 0;
         if (selectedService) {
             if (selectedService.type === 'kg') {
-                total += (parseFloat(weight) || 0) * selectedService.price;
+                // Para clientes de contrato, usar taxa base (BASE_RATE) ao invés do preço do serviço
+                const kgPrice = selectedClient?.isContract ? BASE_RATE : selectedService.price;
+                total += (parseFloat(weight) || 0) * kgPrice;
                 // Add items cost if any selected in mixed mode
                 total += selectedItems.reduce((acc, curr) => acc + (curr.item.price * curr.quantity), 0);
             } else {
@@ -453,14 +457,20 @@ export const NewOrderScreen: React.FC = () => {
             let detailsWithContract = finalDetails;
 
             if (selectedClient.isContract) {
-                // Sum KG-type items
-                const totalKg = allItems
-                    .filter(i => i.service_name.toLowerCase().includes('kg'))
+                // Calcula total kg: usa o peso atual (se serviço kg ativo) + itens salvos de tipo kg
+                let totalKg = 0;
+
+                // Peso do serviço atual (se for tipo kg)
+                if (selectedService && selectedService.type === 'kg') {
+                    totalKg += parseFloat(weight) || 0;
+                }
+
+                // Peso de serviços kg salvos anteriormente (multi-serviço)
+                totalKg += orderItems
+                    .filter(i => i.service_name.toLowerCase().includes('kg') || i.service_name.toLowerCase().includes('lavagem'))
                     .reduce((sum, i) => sum + i.quantity, 0);
 
                 if (totalKg > 0) {
-                    // Cobra a taxa base (R$15,90/kg) no ato do pedido.
-                    // O valor correto pela faixa mensal é calculado no Fechamento de Contratos.
                     finalValue = parseFloat((totalKg * BASE_RATE).toFixed(2));
                     detailsWithContract = `[Contrato | ${totalKg.toFixed(2)} kg × R$${BASE_RATE.toFixed(2)}] ` + finalDetails;
                     finalPaymentMethod = 'Contrato Mensal';
@@ -603,6 +613,15 @@ export const NewOrderScreen: React.FC = () => {
                 {step === 2 && (
                     <div className="space-y-4 animate-in slide-in-from-right duration-300">
                         <h2 className="text-xl font-bold text-[#111418] dark:text-white mb-4">Qual o serviço?</h2>
+                        {selectedClient?.isContract && (
+                            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-xl">
+                                <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-lg">verified</span>
+                                <div>
+                                    <span className="text-xs font-bold text-blue-700 dark:text-blue-300">Cliente Contrato</span>
+                                    <span className="text-[10px] text-blue-500 dark:text-blue-400 ml-2">Taxa base: R$ {BASE_RATE.toFixed(2)}/kg</span>
+                                </div>
+                            </div>
+                        )}
                         <div className="grid gap-3">
                             {services.map(service => {
                                 const isRevitalize = service.name.toLowerCase().includes('revitalize');

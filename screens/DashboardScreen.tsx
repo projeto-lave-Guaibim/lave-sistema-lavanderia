@@ -35,7 +35,7 @@ const DashboardScreen: React.FC = () => {
                     type: TransactionType.Receita,
                     description: `Pedido #${order.id.toString().padStart(4, '0')} - ${order.client.name}`,
                     clientName: order.client.name,
-                    date: order.timestamp.split(',')[0].trim(),
+                    date: new Date(order.timestamp).toLocaleDateString('pt-BR'),
                     amount: order.value || 0,
                     paid: order.status === OrderStatus.Entregue,
                     icon: 'local_laundry_service'
