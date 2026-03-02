@@ -355,43 +355,35 @@ export const generateGroupedFinanceReportPDF = (transactions: Transaction[], sta
 
     currentY += 40;
 
-    // --- Receitas (Agrupadas) ---
-    const serviceRevenue = revenues
-        .filter(r => r.group === 'Receita de Serviços' || r.category)
-        .reduce((acc, curr) => {
-            const key = curr.category || 'Outros';
-            acc[key] = (acc[key] || 0) + curr.amount;
-            return acc;
-        }, {} as Record<string, number>);
-
-    if (Object.keys(serviceRevenue).length > 0) {
+    // --- Receitas (Listagem Detalhada) ---
+    if (revenues.length > 0) {
         doc.setFontSize(14);
         doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.text("Detalhamento de Receitas por Serviço", 15, currentY);
+        doc.text("Receitas", 15, currentY);
         currentY += 8;
 
-        const serviceRows = Object.entries(serviceRevenue)
-            .sort(([,a], [,b]) => b - a)
-            .map(([service, amount]) => [
-                service,
-                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-                `${((amount / totalRevenue) * 100).toFixed(1)}%`
-            ]);
+        const columns = ["Data", "Descrição", "Grupo/Categoria", "Valor"];
+        const revenueRows = revenues.map(t => [
+            t.date,
+            t.description,
+            t.group ? `${t.group} - ${t.category}` : (t.category || '-'),
+            `R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        ]);
 
         autoTable(doc, {
             startY: currentY,
-            head: [['Serviço', 'Valor Total', '% do Total Receita']],
-            body: serviceRows,
-            theme: 'grid',
+            head: [columns],
+            body: revenueRows,
+            theme: 'striped',
             headStyles: { fillColor: [46, 204, 113] }, // Green
-            styles: { fontSize: 9 },
+            styles: { fontSize: 8 },
             columnStyles: {
-                0: { cellWidth: 100 },
-                1: { cellWidth: 50, halign: 'right' },
-                2: { cellWidth: 35, halign: 'right' }
+                0: { cellWidth: 25 },
+                1: { cellWidth: 80 },
+                2: { cellWidth: 50 },
+                3: { cellWidth: 30, halign: 'right' }
             }
         });
-        
     }
 
     currentY = (doc as any).lastAutoTable.finalY + 20;
