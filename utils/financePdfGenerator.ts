@@ -13,10 +13,15 @@ export const generateFinanceReportPDF = (transactions: Transaction[], startDate:
     doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
     doc.text("Relatório Financeiro", 15, 20);
 
+    const sd = startDate.split('-').map(Number);
+    const ed = endDate.split('-').map(Number);
+    const startStr = new Date(sd[0], sd[1] - 1, sd[2]).toLocaleDateString('pt-BR');
+    const endStr = new Date(ed[0], ed[1] - 1, ed[2]).toLocaleDateString('pt-BR');
+
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
-    doc.text(`Período: ${new Date(startDate).toLocaleDateString('pt-BR')} a ${new Date(endDate).toLocaleDateString('pt-BR')}`, 15, 27);
+    doc.text(`Período: ${startStr} a ${endStr}`, 15, 27);
     
     doc.setFontSize(8);
     doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 15, 32);
@@ -276,4 +281,150 @@ export const generateFinanceReportPDF = (transactions: Transaction[], startDate:
     }
 
     doc.save(`Relatorio_Financeiro_${startDate}_${endDate}.pdf`);
+};
+
+export const generateGroupedFinanceReportPDF = (transactions: Transaction[], startDate: string, endDate: string) => {
+    const doc = new jsPDF();
+    const primaryColor: [number, number, number] = [48, 125, 232]; // #307de8
+    const darkGray: [number, number, number] = [60, 60, 60];
+
+    // --- Header ---
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text("Relatório Agrupado", 15, 20);
+
+    const sd = startDate.split('-').map(Number);
+    const ed = endDate.split('-').map(Number);
+    const startStr = new Date(sd[0], sd[1] - 1, sd[2]).toLocaleDateString('pt-BR');
+    const endStr = new Date(ed[0], ed[1] - 1, ed[2]).toLocaleDateString('pt-BR');
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(darkGray[0], darkGray[1], darkGray[2]);
+    doc.text(`Período: ${startStr} a ${endStr}`, 15, 27);
+    
+    doc.setFontSize(8);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 15, 32);
+
+    // Company Info (Right aligned)
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("LAVÊ", 195, 20, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.text("CNPJ: 63.374.913/0001-98", 195, 25, { align: "right" });
+    doc.text("Valença - BA", 195, 29, { align: "right" });
+
+    let currentY = 40;
+
+    // --- Summary Section ---
+    const revenues = transactions.filter(t => t.type === TransactionType.Receita);
+    const expenses = transactions.filter(t => t.type === TransactionType.Despesa);
+
+    const totalRevenue = revenues.reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0);
+    const balance = totalRevenue - totalExpense;
+
+    doc.setFillColor(248, 249, 250);
+    doc.roundedRect(15, currentY, 180, 25, 3, 3, 'F');
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("RESUMO DO PERÍODO", 20, currentY + 8);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    
+    // Revenue
+    doc.setTextColor(0, 100, 0); // Green
+    doc.text("Total Receitas:", 20, currentY + 18);
+    doc.text(`R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 50, currentY + 18);
+
+    // Expense
+    doc.setTextColor(180, 0, 0); // Red
+    doc.text("Total Despesas:", 80, currentY + 18);
+    doc.text(`R$ ${totalExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 110, currentY + 18);
+
+    // Balance
+    const balanceColor = balance >= 0 ? [0, 100, 0] : [180, 0, 0];
+    doc.setTextColor(balanceColor[0], balanceColor[1], balanceColor[2] as number);
+    doc.setFont("helvetica", "bold");
+    doc.text("Saldo:", 140, currentY + 18);
+    doc.text(`R$ ${balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 190, currentY + 18, { align: 'right' });
+
+    currentY += 40;
+
+    // --- Receitas (Totalizadas) ---
+    doc.setFontSize(14);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text("Receitas", 15, currentY);
+    currentY += 8;
+
+    autoTable(doc, {
+        startY: currentY,
+        head: [['Resumo de Receitas', 'Valor']],
+        body: [
+            ['Total de Receitas no Período', `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]
+        ],
+        theme: 'grid',
+        headStyles: { fillColor: [46, 204, 113] },
+        styles: { fontSize: 9 },
+        columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 50, halign: 'right' }
+        }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 20;
+
+    // --- Despesas (Agrupadas por Categoria) ---
+    const expenseByCategory = expenses.reduce((acc, curr) => {
+        const key = curr.category || 'Sem Categoria'; 
+        acc[key] = (acc[key] || 0) + curr.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    if (Object.keys(expenseByCategory).length > 0) {
+        if (currentY + 60 > 280) { doc.addPage(); currentY = 20; }
+
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Despesas (Agrupadas por Categoria)", 15, currentY);
+        currentY += 8;
+
+        const expenseRows = Object.entries(expenseByCategory)
+            .sort(([,a], [,b]) => b - a)
+            .map(([category, amount]) => [
+                category,
+                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                `${((amount / totalExpense) * 100).toFixed(1)}%`
+            ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Categoria de Despesa', 'Valor Total', '%']],
+            body: expenseRows,
+            theme: 'grid',
+            headStyles: { fillColor: [192, 57, 43] },
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 50, halign: 'right' },
+                2: { cellWidth: 35, halign: 'right' }
+            }
+        });
+        currentY = (doc as any).lastAutoTable.finalY + 15;
+    }
+
+    // Footer
+    const pageCount = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Página ${i} de ${pageCount}`, 195, 290, { align: "right" });
+    }
+
+    doc.save(`Relatorio_Agrupado_${startDate}_${endDate}.pdf`);
 };

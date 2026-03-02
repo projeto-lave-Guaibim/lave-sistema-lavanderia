@@ -3,7 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { financeService } from '../services/financeService';
 import { orderService } from '../services/orderService';
 import { clientService } from '../services/clientService';
-import { generateFinanceReportPDF } from '../utils/financePdfGenerator';
+import { generateFinanceReportPDF, generateGroupedFinanceReportPDF } from '../utils/financePdfGenerator';
 import { feeUtils } from '../utils/feeUtils';
 import { Transaction, TransactionType } from '../types';
 import Header from '../components/Header';
@@ -122,20 +122,17 @@ export const FinanceReportsScreen: React.FC = () => {
     };
 
     const filterData = () => {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+        // Appending T00:00:00 ensures it parses local midnight, preventing timezone shift
+        const start = new Date(startDate + "T00:00:00");
+        const end = new Date(endDate + "T23:59:59");
 
         const filtered = transactions.filter(t => {
-            // Converter data da transação (dd/mm/yyyy ou yyyy-mm-dd)
             let tDate: Date;
             if (t.date.includes('/')) {
                 const parts = t.date.split('/');
                 tDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
             } else {
-                tDate = new Date(t.date);
+                tDate = new Date(t.date + "T00:00:00");
             }
             return tDate >= start && tDate <= end;
         });
@@ -149,6 +146,14 @@ export const FinanceReportsScreen: React.FC = () => {
             return;
         }
         generateFinanceReportPDF(filteredData, startDate, endDate);
+    };
+
+    const handleExportGroupedPDF = () => {
+        if (filteredData.length === 0) {
+            alert("Não há dados para exportar no período selecionado.");
+            return;
+        }
+        generateGroupedFinanceReportPDF(filteredData, startDate, endDate);
     };
 
     const handleExportCSV = () => {
@@ -308,17 +313,24 @@ export const FinanceReportsScreen: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4">
                     <button 
                         onClick={handleExportPDF}
-                        className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-primary/30 transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-primary/30 transition-all text-sm"
                     >
                         <span className="material-symbols-outlined">description</span>
-                        Baixar Relatório em PDF
+                        Relatório Completo (PDF)
+                    </button>
+                    <button 
+                        onClick={handleExportGroupedPDF}
+                        className="flex-1 flex items-center justify-center gap-2 bg-secondary hover:bg-orange-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-orange-500/30 transition-all text-sm"
+                    >
+                        <span className="material-symbols-outlined">folder_copy</span>
+                        Relatório Agrupado (PDF)
                     </button>
                     <button 
                         onClick={handleExportCSV}
-                        className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-600/30 transition-all"
+                        className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-green-600/30 transition-all text-sm"
                     >
                         <span className="material-symbols-outlined">table_view</span>
                         Baixar Planilha (CSV)
