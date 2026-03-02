@@ -355,26 +355,44 @@ export const generateGroupedFinanceReportPDF = (transactions: Transaction[], sta
 
     currentY += 40;
 
-    // --- Receitas (Totalizadas) ---
-    doc.setFontSize(14);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text("Receitas", 15, currentY);
-    currentY += 8;
+    // --- Receitas (Agrupadas) ---
+    const serviceRevenue = revenues
+        .filter(r => r.group === 'Receita de Serviços' || r.category)
+        .reduce((acc, curr) => {
+            const key = curr.category || 'Outros';
+            acc[key] = (acc[key] || 0) + curr.amount;
+            return acc;
+        }, {} as Record<string, number>);
 
-    autoTable(doc, {
-        startY: currentY,
-        head: [['Resumo de Receitas', 'Valor']],
-        body: [
-            ['Total de Receitas no Período', `R$ ${totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]
-        ],
-        theme: 'grid',
-        headStyles: { fillColor: [46, 204, 113] },
-        styles: { fontSize: 9 },
-        columnStyles: {
-            0: { cellWidth: 100 },
-            1: { cellWidth: 50, halign: 'right' }
-        }
-    });
+    if (Object.keys(serviceRevenue).length > 0) {
+        doc.setFontSize(14);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text("Detalhamento de Receitas por Serviço", 15, currentY);
+        currentY += 8;
+
+        const serviceRows = Object.entries(serviceRevenue)
+            .sort(([,a], [,b]) => b - a)
+            .map(([service, amount]) => [
+                service,
+                `R$ ${amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                `${((amount / totalRevenue) * 100).toFixed(1)}%`
+            ]);
+
+        autoTable(doc, {
+            startY: currentY,
+            head: [['Serviço', 'Valor Total', '% do Total Receita']],
+            body: serviceRows,
+            theme: 'grid',
+            headStyles: { fillColor: [46, 204, 113] }, // Green
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { cellWidth: 100 },
+                1: { cellWidth: 50, halign: 'right' },
+                2: { cellWidth: 35, halign: 'right' }
+            }
+        });
+        
+    }
 
     currentY = (doc as any).lastAutoTable.finalY + 20;
 

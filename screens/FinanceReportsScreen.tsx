@@ -323,7 +323,7 @@ export const FinanceReportsScreen: React.FC = () => {
                     </button>
                     <button 
                         onClick={handleExportGroupedPDF}
-                        className="flex-1 flex items-center justify-center gap-2 bg-secondary hover:bg-orange-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-orange-500/30 transition-all text-sm"
+                        className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-red-600/30 transition-all text-sm"
                     >
                         <span className="material-symbols-outlined">folder_copy</span>
                         Relatório Agrupado (PDF)
