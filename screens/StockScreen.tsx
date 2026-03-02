@@ -242,6 +242,10 @@ export const AddStockItemScreen: React.FC = () => {
                                     <option>5.13 Etiquetas e Material de Identificação</option>
                                     <option>5.14 Fita Crepe e Caneta Permanente</option>
                                     <option>5.15 Materiais de Limpeza do Espaço</option>
+                                    <option>5.16 Amaciante</option>
+                                    <option>5.17 Gás (Secadoras/Aquecimento)</option>
+                                    <option>5.18 Combustível e Logística (Entregas)</option>
+                                    <option>5.19 Outros Produtos Químicos / Tira-manchas</option>
                                 </select>
                             </div>
                         </div>
@@ -358,6 +362,10 @@ export const EditStockItemScreen: React.FC = () => {
                                     <option>5.13 Etiquetas e Material de Identificação</option>
                                     <option>5.14 Fita Crepe e Caneta Permanente</option>
                                     <option>5.15 Materiais de Limpeza do Espaço</option>
+                                    <option>5.16 Amaciante</option>
+                                    <option>5.17 Gás (Secadoras/Aquecimento)</option>
+                                    <option>5.18 Combustível e Logística (Entregas)</option>
+                                    <option>5.19 Outros Produtos Químicos / Tira-manchas</option>
                                 </select>
                                 <div className="absolute right-3 top-10 pointer-events-none text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
                             </div>

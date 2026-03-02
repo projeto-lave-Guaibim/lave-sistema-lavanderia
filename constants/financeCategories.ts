@@ -24,7 +24,11 @@ export const FINANCE_CATEGORIES = {
             '5.12 Embalagens — Sacolas e Papel de Embrulho',
             '5.13 Etiquetas e Material de Identificação',
             '5.14 Fita Crepe e Caneta Permanente',
-            '5.15 Materiais de Limpeza do Espaço'
+            '5.15 Materiais de Limpeza do Espaço',
+            '5.16 Amaciante',
+            '5.17 Gás (Secadoras/Aquecimento)',
+            '5.18 Combustível e Logística (Entregas)',
+            '5.19 Outros Produtos Químicos / Tira-manchas'
         ],
         'G06 - Custos com Pessoal': [
             '6.01 Salário — Colaborador 1',
@@ -36,7 +40,8 @@ export const FINANCE_CATEGORIES = {
             '6.07 Vale Transporte',
             '6.08 Vale Refeição / Alimentação',
             '6.09 Pró-labore do Titular',
-            '6.10 Comissões e Bonificações'
+            '6.10 Comissões e Bonificações',
+            '6.11 Diarista / Freelancer / Ajuda Extra'
         ],
         'G07 - Manutenção e Equipamentos': [
             '7.01 Manutenção Corretiva — Emergencial',
