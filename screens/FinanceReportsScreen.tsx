@@ -99,7 +99,7 @@ export const FinanceReportsScreen: React.FC = () => {
                     amount: grossAmount, // Store Gross as main amount for compatibility
                     fee: feeVal,
                     netValue: netAmount,
-                    paid: true,
+                    paid: !!order.isPaid,
                     icon: 'local_laundry_service',
                     category: order.service || 'Serviços Diversos', 
                     group: 'Receita de Serviços',
@@ -127,6 +127,10 @@ export const FinanceReportsScreen: React.FC = () => {
         const end = new Date(endDate + "T23:59:59");
 
         const filtered = transactions.filter(t => {
+            if (t.type === TransactionType.Receita && !t.paid) {
+                return false;
+            }
+
             let tDate: Date;
             if (t.date.includes('/')) {
                 const parts = t.date.split('/');

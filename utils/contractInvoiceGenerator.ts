@@ -129,11 +129,15 @@ export const generateContractInvoice = async (data: ContractInvoiceData): Promis
     autoTable(doc, {
         startY: y,
         head: [['Faixa', 'Limite', 'Valor por kg']],
-        body: CONTRACT_TIERS.map(tier => [
-            tier.label.split('(')[0].trim(),
-            tier.maxKg === Infinity ? '200+ kg' : `At\u00e9 ${tier.maxKg} kg`,
-            `R$ ${tier.price.toFixed(2)}`
-        ]),
+        body: CONTRACT_TIERS.map(tier => {
+            const match = tier.label.match(/\(([^)]+)\)/);
+            const limitStr = match ? match[1] : `${tier.minKg} kg+`;
+            return [
+                tier.label.split('(')[0].trim(),
+                limitStr,
+                `R$ ${tier.price.toFixed(2)}`
+            ];
+        }),
         theme: 'grid',
         styles: { fontSize: 7, cellPadding: 2, font: 'helvetica' },
         headStyles: { fillColor: PRIMARY, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7 },

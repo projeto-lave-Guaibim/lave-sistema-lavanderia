@@ -27,10 +27,15 @@ import { InternalMetricsScreen } from './screens/InternalMetricsScreen';
 
 
 import Sidebar from './components/Sidebar';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { loadContractRules } from './utils/contractUtils';
 
 const AppLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    useEffect(() => {
+        loadContractRules();
+    }, []);
 
     return (
         <ProtectedRoute>

@@ -13,6 +13,7 @@ export const NewOrderScreenV2: React.FC = () => {
     
     const [clients, setClients] = useState<Client[]>([]);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+    const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [details, setDetails] = useState('');
     const [loading, setLoading] = useState(true);
@@ -50,7 +51,7 @@ export const NewOrderScreenV2: React.FC = () => {
                 details: details || 'Pedido com múltiplos serviços',
                 status: OrderStatus.Pendente,
                 value: total,
-                timestamp: new Date().toISOString(),
+                timestamp: new Date(orderDate + 'T12:00:00Z').toISOString(),
                 extras: [],
                 discount: 0
             });
@@ -116,6 +117,22 @@ export const NewOrderScreenV2: React.FC = () => {
                                     </option>
                                 ))}
                             </select>
+                        </div>
+                    </div>
+
+                    {/* Data do Pedido */}
+                    <div className="bg-white dark:bg-[#1a222d] border border-gray-200 dark:border-gray-700 rounded overflow-hidden">
+                        <div className="flex items-center gap-1.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e2a38] px-3 py-1.5">
+                            <span className="material-symbols-outlined text-primary text-[14px]">calendar_today</span>
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Data do Pedido</span>
+                        </div>
+                        <div className="p-3">
+                            <input
+                                type="date"
+                                value={orderDate}
+                                onChange={(e) => setOrderDate(e.target.value)}
+                                className="w-full h-8 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-2.5 text-xs text-gray-900 dark:text-white focus:ring-1 focus:ring-primary focus:border-primary"
+                            />
                         </div>
                     </div>
 

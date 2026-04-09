@@ -486,7 +486,7 @@ export const NewOrderScreen: React.FC = () => {
                 status: finalStatus,
                 extras: [],
                 discount: parseFloat(discount) || 0,
-                timestamp: new Date().toISOString(),
+                timestamp: new Date(orderDate + 'T12:00:00Z').toISOString(),
                 payment_method: finalPaymentMethod
             };
 

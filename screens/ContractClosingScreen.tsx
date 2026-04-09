@@ -5,7 +5,7 @@ import { clientService } from '../services/clientService';
 import { orderService } from '../services/orderService';
 import { financeService } from '../services/financeService';
 import { Client, Order, TransactionType } from '../types';
-import { calculateCredit, CONTRACT_TIERS, BASE_RATE } from '../utils/contractUtils';
+import { calculateCredit, CONTRACT_TIERS, BASE_RATE, loadContractRules } from '../utils/contractUtils';
 import { generateContractInvoice } from '../utils/contractInvoiceGenerator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,6 +32,7 @@ const extractKgFromDetails = (details: string): number => {
 // ─── Component ────────────────────────────────────────────────────────────────
 export const ContractClosingScreen: React.FC = () => {
     const { toggleSidebar } = useOutletContext<{ toggleSidebar: () => void }>();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [closingData, setClosingData] = useState<ClientClosing[]>([]);
     const [registering, setRegistering] = useState<string | null>(null);
@@ -47,6 +48,7 @@ export const ContractClosingScreen: React.FC = () => {
     const loadData = async () => {
         setLoading(true);
         try {
+            await loadContractRules();
             const allClients = await clientService.getAll();
             const contractClients = allClients.filter(c => c.isContract);
 
@@ -266,10 +268,22 @@ export const ContractClosingScreen: React.FC = () => {
                                                                 if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('pt-BR');
                                                             } catch {}
                                                             return (
-                                                                <div key={o.id || idx} className="flex items-center justify-between text-[10px] py-0.5">
-                                                                    <span className="text-gray-500">{dateStr}</span>
-                                                                    <span className="text-gray-700 dark:text-gray-300">{kg > 0 ? `${kg.toFixed(2)} kg` : '—'}</span>
-                                                                    <span className="font-semibold text-gray-900 dark:text-white">R$ {(o.value || 0).toFixed(2)}</span>
+                                                                <div key={o.id || idx} className="flex items-center justify-between text-[10px] py-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 transition-colors">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-gray-500 w-16">{dateStr}</span>
+                                                                        <span className="text-gray-700 dark:text-gray-300 w-14 text-right">{kg > 0 ? `${kg.toFixed(2)} kg` : '—'}</span>
+                                                                        <span className="font-semibold text-gray-900 dark:text-white w-16 text-right">R$ {(o.value || 0).toFixed(2)}</span>
+                                                                    </div>
+                                                                    <button 
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            navigate(`/orders/${o.id}`);
+                                                                        }}
+                                                                        className="flex items-center gap-1 text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 P-1 rounded transition-colors"
+                                                                        title="Visualizar ou Editar Pedido"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[14px]">edit_square</span>
+                                                                    </button>
                                                                 </div>
                                                             );
                                                         })}
